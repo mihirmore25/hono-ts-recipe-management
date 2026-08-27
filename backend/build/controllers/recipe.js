@@ -108,7 +108,6 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
 exports.createRecipe = createRecipe;
 const getRecipes = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const recipes = yield Recipe_1.Recipe.find()
-        .limit(8)
         .sort({ createdAt: -1 })
         .select("-__v");
     if (recipes.length === 0 || recipes === null || 0) {

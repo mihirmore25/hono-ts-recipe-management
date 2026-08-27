@@ -139,7 +139,6 @@ export const createRecipe = async (c: Context) => {
 
 export const getRecipes = async (c: Context) => {
     const recipes: IRecipeSchema[] = await Recipe.find()
-        .limit(8)
         .sort({ createdAt: -1 })
         .select("-__v");
 
@@ -543,4 +542,3 @@ export const likeRecipe = async (c: Context) => {
         );
     }
 };
-
