@@ -11,8 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.likeRecipe = exports.getUserRecipes = exports.updateRecipe = exports.deleteRecipe = exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
 const Recipe_1 = require("../models/Recipe");
-const jwt_1 = require("hono/jwt");
-const cookie_1 = require("hono/cookie");
 const encode_1 = require("hono/utils/encode");
 const cloudinary_1 = require("cloudinary");
 const mongoose_1 = require("mongoose");
@@ -20,13 +18,6 @@ const User_1 = require("../models/User");
 const LikedRecipe_1 = require("../models/LikedRecipe");
 const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const token = (0, cookie_1.getCookie)(c, "access_token");
-        if (!token) {
-            return c.json({
-                status: false,
-                message: "Not authorize to access this route, Please try logging in first.",
-            }, 401);
-        }
         const formBody = yield c.req.formData();
         // create object literal for storing req body of multipart-data
         const reqBody = {};
@@ -52,12 +43,7 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "All the given fields are required.",
             }, 400);
         }
-        const user_data = yield (0, jwt_1.verify)(token, process.env.JWT_SECRET || "secret_mihir_jwt");
-        if (!user_data)
-            return c.json({
-                status: false,
-                message: "This session has expired. Please login",
-            });
+        const user = c.get("user");
         const body = yield c.req.parseBody();
         const image = body["image"];
         if (!image ||
@@ -90,7 +76,7 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
             carbs,
             protein,
             fat,
-            user: user_data.id,
+            user: user._id,
         });
         const newCreatedRecipe = yield newRecipe.save();
         // console.log(newCreatedRecipe.toObject());

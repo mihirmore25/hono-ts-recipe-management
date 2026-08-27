@@ -1,7 +1,5 @@
 ﻿import { IRecipeSchema, Recipe } from "../models/Recipe";
-import { verify as JwtVerify } from "hono/jwt";
 import { Context } from "hono";
-import { getCookie } from "hono/cookie";
 import { encodeBase64 } from "hono/utils/encode";
 import { v2 as cloudinary } from "cloudinary";
 import { isValidObjectId } from "mongoose";
@@ -10,19 +8,6 @@ import { ILikedRecipe, LikedRecipe } from "../models/LikedRecipe";
 
 export const createRecipe = async (c: Context) => {
     try {
-        const token: string = getCookie(c, "access_token")!;
-
-        if (!token) {
-            return c.json(
-                {
-                    status: false,
-                    message:
-                        "Not authorize to access this route, Please try logging in first.",
-                },
-                401,
-            );
-        }
-
         const formBody = await c.req.formData();
 
         // create object literal for storing req body of multipart-data
@@ -70,13 +55,7 @@ export const createRecipe = async (c: Context) => {
             );
         }
 
-        const user_data = await JwtVerify(token, process.env.JWT_SECRET || "secret_mihir_jwt");
-
-        if (!user_data)
-            return c.json({
-                status: false,
-                message: "This session has expired. Please login",
-            });
+        const user = c.get("user") as IUserSchema;
 
         const body = await c.req.parseBody();
         const image = body["image"];
@@ -122,7 +101,7 @@ export const createRecipe = async (c: Context) => {
             carbs,
             protein,
             fat,
-            user: user_data.id,
+            user: user._id,
         });
 
         const newCreatedRecipe = await newRecipe.save();
