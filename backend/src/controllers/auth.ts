@@ -110,9 +110,10 @@ export const login = async (c: Context) => {
     const { password: _password, ...userData } = user.toObject();
 
     setCookie(c, "access_token", token, {
-        maxAge: 30 * 60 * 1000, // would expire in 30 minutes
+        maxAge: 30 * 60,
         httpOnly: true,
-        sameSite: "Strict",
+        sameSite: "None",
+        secure: true,
     });
 
     return c.json({

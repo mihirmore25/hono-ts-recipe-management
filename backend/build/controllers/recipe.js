@@ -24,9 +24,8 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         if (!token) {
             return c.json({
                 status: false,
-                error: c.res.status,
                 message: "Not authorize to access this route, Please try logging in first.",
-            });
+            }, 401);
         }
         const formBody = yield c.req.formData();
         // create object literal for storing req body of multipart-data

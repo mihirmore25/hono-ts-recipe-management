@@ -13,12 +13,14 @@ export const createRecipe = async (c: Context) => {
         const token: string = getCookie(c, "access_token")!;
 
         if (!token) {
-            return c.json({
-                status: false,
-                error: c.res.status,
-                message:
-                    "Not authorize to access this route, Please try logging in first.",
-            });
+            return c.json(
+                {
+                    status: false,
+                    message:
+                        "Not authorize to access this route, Please try logging in first.",
+                },
+                401,
+            );
         }
 
         const formBody = await c.req.formData();

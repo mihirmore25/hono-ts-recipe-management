@@ -96,9 +96,10 @@ const login = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const token = yield user.generateJWT();
     const _a = user.toObject(), { password: _password } = _a, userData = __rest(_a, ["password"]);
     (0, cookie_1.setCookie)(c, "access_token", token, {
-        maxAge: 30 * 60 * 1000, // would expire in 30 minutes
+        maxAge: 30 * 60,
         httpOnly: true,
-        sameSite: "Strict",
+        sameSite: "None",
+        secure: true,
     });
     return c.json({
         status: true,
