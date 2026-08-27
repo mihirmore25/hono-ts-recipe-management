@@ -103,6 +103,7 @@ const login = (c) => __awaiter(void 0, void 0, void 0, function* () {
     return c.json({
         status: true,
         data: [userData],
+        user: userData,
         token,
         message: "You have successfully logged in.",
     });

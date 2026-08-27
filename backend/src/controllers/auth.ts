@@ -118,6 +118,7 @@ export const login = async (c: Context) => {
     return c.json({
         status: true,
         data: [userData],
+        user: userData,
         token,
         message: "You have successfully logged in.",
     });
