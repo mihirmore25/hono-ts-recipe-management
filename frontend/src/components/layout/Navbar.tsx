@@ -96,26 +96,37 @@ export const Navbar = () => {
                         ) : null}
                     </div>
 
-                    <button
-                        type="button"
-                        aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                        onClick={() => setMobileMenuOpen((open) => !open)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-amber-50 hover:text-amber-700 sm:hidden"
-                    >
-                        {mobileMenuOpen ? (
-                            <UtensilsCrossed
-                                size={18}
-                                strokeWidth={2.5}
-                                className="text-amber-500"
-                            />
-                        ) : (
-                            <Hamburger
-                                size={20}
-                                strokeWidth={2.2}
-                                className="text-amber-500"
-                            />
-                        )}
-                    </button>
+                    <div className="flex items-center gap-2 sm:hidden">
+                        {user ? (
+                            <NavLink
+                                to={`/profile/${user._id ?? user.id ?? ""}`}
+                                className="flex max-w-[9rem] items-center gap-2 truncate rounded-full bg-slate-100 px-3 py-2 text-xs text-slate-600"
+                            >
+                                <UserCircle2 size={16} />{" "}
+                                <span className="truncate">{user.username}</span>
+                            </NavLink>
+                        ) : null}
+                        <button
+                            type="button"
+                            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                            onClick={() => setMobileMenuOpen((open) => !open)}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-amber-50 hover:text-amber-700"
+                        >
+                            {mobileMenuOpen ? (
+                                <UtensilsCrossed
+                                    size={18}
+                                    strokeWidth={2.5}
+                                    className="text-amber-500"
+                                />
+                            ) : (
+                                <Hamburger
+                                    size={20}
+                                    strokeWidth={2.2}
+                                    className="text-amber-500"
+                                />
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {mobileMenuOpen ? (

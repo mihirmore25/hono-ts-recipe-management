@@ -107,6 +107,7 @@ export const login = async (c: Context) => {
     // };
 
     const token = await user.generateJWT();
+    const { password: _password, ...userData } = user.toObject();
 
     setCookie(c, "access_token", token, {
         maxAge: 30 * 60 * 1000, // would expire in 30 minutes
@@ -116,7 +117,7 @@ export const login = async (c: Context) => {
 
     return c.json({
         status: true,
-        data: [user],
+        data: [userData],
         token,
         message: "You have successfully logged in.",
     });
