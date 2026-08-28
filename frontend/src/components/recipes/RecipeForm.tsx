@@ -5,6 +5,7 @@ import { recipeApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe } from "../../types";
 import { RecipePageNavigation } from "./RecipePageNavigation";
+import { useAuth } from "../../contexts/AuthContext";
 
 const emptyRecipe = {
     title: "",
@@ -37,12 +38,16 @@ type NumericRecipeField =
     | "protein"
     | "fat";
 
-const numberInputValue = (value: string) =>
-    value === "" ? ("" as unknown as number) : Number(value);
+const numberInputValue = (value: string) => {
+    if (value === "") return "" as unknown as number;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+};
 
 export const RecipeForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
     const [recipe, setRecipe] = useState<Recipe>(emptyRecipe as Recipe);
     const [file, setFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -217,6 +222,12 @@ export const RecipeForm = () => {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (!isAuthenticated || !localStorage.getItem("token")) {
+            setError("Please log in again before creating a recipe.");
+            navigate("/login");
+            return;
+        }
+
         const ingredientList = ingredients
             .map((item) => item.trim())
             .filter(Boolean);
@@ -226,6 +237,29 @@ export const RecipeForm = () => {
 
         if (!ingredientList.length || !instructionList.length) {
             setError("Add at least one ingredient and one instruction.");
+            return;
+        }
+
+        const numericFields: NumericRecipeField[] = [
+            "totalTime",
+            "prepTime",
+            "cookingTime",
+            "calories",
+            "carbs",
+            "protein",
+            "fat",
+        ];
+        const hasInvalidNumber = numericFields.some((field) => {
+            const value = recipe[field];
+            return (
+                typeof value !== "number" ||
+                !Number.isInteger(value) ||
+                value < 0
+            );
+        });
+
+        if (hasInvalidNumber) {
+            setError("Numeric values must be whole numbers greater than or equal to 0.");
             return;
         }
 
@@ -247,7 +281,12 @@ export const RecipeForm = () => {
             if (id) {
                 await recipeApi.update(id, formData);
             } else {
-                await recipeApi.create(formData);
+                const response = await recipeApi.create(formData);
+                if (!response.data?.status || !response.data?.data?.[0]) {
+                    throw new Error(
+                        response.data?.message || "Recipe was not created.",
+                    );
+                }
             }
             // show confetti then navigate
             setShowConfetti(true);
@@ -354,6 +393,8 @@ export const RecipeForm = () => {
                             </label>
                             <input
                                 type="number"
+                                min={0}
+                                step={1}
                                 value={recipe.totalTime}
                                 onFocus={() =>
                                     clearInitialNumber("totalTime", 20)
@@ -381,6 +422,8 @@ export const RecipeForm = () => {
                             </label>
                             <input
                                 type="number"
+                                min={0}
+                                step={1}
                                 value={recipe.prepTime}
                                 onFocus={() =>
                                     clearInitialNumber("prepTime", 10)
@@ -408,6 +451,8 @@ export const RecipeForm = () => {
                             </label>
                             <input
                                 type="number"
+                                min={0}
+                                step={1}
                                 value={recipe.cookingTime}
                                 onFocus={() =>
                                     clearInitialNumber("cookingTime", 10)

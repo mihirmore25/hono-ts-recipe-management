@@ -36,8 +36,19 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                     email: form.email,
                     password: form.password,
                 });
-                const user = response.data?.data?.[0] ?? response.data?.data;
-                login(user, response.data?.token ?? "");
+                const responseData = response.data;
+                const user =
+                    responseData?.user ??
+                    (Array.isArray(responseData?.data)
+                        ? responseData.data[0]
+                        : responseData?.data?.user ?? responseData?.data);
+                const authToken = response.data?.token;
+
+                if (!user || typeof user !== "object" || !authToken) {
+                    throw new Error("Invalid login response from server.");
+                }
+
+                login(user, authToken);
                 navigate("/");
             } else if (mode === "forgot") {
                 await authApi.forgotPassword({ email: form.email });

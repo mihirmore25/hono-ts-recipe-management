@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 export interface LikeRecipeResponse {
     status: boolean;
@@ -16,9 +16,11 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
+
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers.set("Authorization", `Bearer ${token}`);
     }
+
     return config;
 });
 

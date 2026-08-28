@@ -35,6 +35,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const login = (userData: User, authToken: string) => {
+        if (!userData || !authToken) {
+            throw new Error("Cannot create a session without user credentials.");
+        }
         localStorage.setItem("token", authToken);
         localStorage.setItem("user", JSON.stringify(userData));
         setToken(authToken);

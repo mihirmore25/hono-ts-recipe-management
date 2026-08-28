@@ -26,17 +26,39 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         }
         // console.log(reqBody);
         const { title, description, totalTime, prepTime, cookingTime, ingredients, instructions, calories, carbs, protein, fat, } = reqBody;
+        const numericFields = {
+            totalTime,
+            prepTime,
+            cookingTime,
+            calories,
+            carbs,
+            protein,
+            fat,
+        };
+        const hasInvalidNumber = Object.values(numericFields).some((value) => {
+            const parsed = Number(value);
+            return (value === undefined ||
+                value === "" ||
+                !Number.isInteger(parsed) ||
+                parsed < 0);
+        });
+        if (hasInvalidNumber) {
+            return c.json({
+                status: false,
+                message: "Numeric values must be whole numbers greater than or equal to 0.",
+            }, 400);
+        }
         if (!title ||
             !description ||
-            !totalTime ||
-            !prepTime ||
-            !cookingTime ||
+            totalTime === undefined ||
+            prepTime === undefined ||
+            cookingTime === undefined ||
             !ingredients ||
             !instructions ||
-            !calories ||
-            !carbs ||
-            !protein ||
-            !fat) {
+            calories === undefined ||
+            carbs === undefined ||
+            protein === undefined ||
+            fat === undefined) {
             return c.json({
                 status: false,
                 error: c.res.status,
@@ -174,6 +196,28 @@ const updateRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         }
         // console.log(reqBody);
         const { title, description, totalTime, prepTime, cookingTime, ingredients, instructions, calories, carbs, protein, fat, } = reqBody;
+        const numericFields = {
+            totalTime,
+            prepTime,
+            cookingTime,
+            calories,
+            carbs,
+            protein,
+            fat,
+        };
+        const hasInvalidNumber = Object.values(numericFields).some((value) => {
+            const parsed = Number(value);
+            return (value === undefined ||
+                value === "" ||
+                !Number.isInteger(parsed) ||
+                parsed < 0);
+        });
+        if (hasInvalidNumber) {
+            return c.json({
+                status: false,
+                message: "Numeric values must be whole numbers greater than or equal to 0.",
+            }, 400);
+        }
         const recipeId = c.req.param("id");
         if (!(0, mongoose_1.isValidObjectId)(recipeId) || !recipeId) {
             return c.json({
