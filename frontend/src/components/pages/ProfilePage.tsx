@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, Flame, UserCircle2 } from "lucide-react";
-import { recipeApi } from "../../utils/api";
+import { Clock3, Flame, Pencil, UserCircle2 } from "lucide-react";
+import { recipeApi, userApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe, User } from "../../types";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface UserRecipesResponse {
     numberOfRecipes: number;
@@ -13,9 +14,15 @@ interface UserRecipesResponse {
 
 export const ProfilePage = () => {
     const { id } = useParams();
+    const { user: currentUser, login } = useAuth();
     const [profile, setProfile] = useState<UserRecipesResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [editing, setEditing] = useState(false);
+    const [username, setUsername] = useState("");
+    const [image, setImage] = useState<File | null>(null);
+    const [saving, setSaving] = useState(false);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!id) return;
@@ -34,6 +41,7 @@ export const ProfilePage = () => {
                         recipes: data.recipes ?? [],
                         user: data.user,
                     });
+                    setUsername(data.user?.username ?? "");
                 } else {
                     setProfile(null);
                 }
@@ -47,6 +55,44 @@ export const ProfilePage = () => {
 
         loadProfile();
     }, [id]);
+
+    const canEdit =
+        Boolean(id) &&
+        (currentUser?._id === id ||
+            currentUser?.id === id ||
+            currentUser?.role === "admin");
+
+    const saveProfile = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!id || !canEdit || !username.trim()) return;
+
+        setSaving(true);
+        setError("");
+        try {
+            const formData = new FormData();
+            formData.append("username", username.trim());
+            if (image) formData.append("image", image);
+
+            const response = await userApi.updateProfile(id, formData);
+            const updatedUser = response.data?.data;
+            setProfile((current) =>
+                current ? { ...current, user: updatedUser } : current,
+            );
+            if (
+                currentUser &&
+                (currentUser._id === id || currentUser.id === id)
+            ) {
+                login(updatedUser, localStorage.getItem("token") ?? "");
+            }
+            setImage(null);
+            setEditing(false);
+        } catch (requestError) {
+            console.error("Failed to update profile:", requestError);
+            setError("Unable to update this profile.");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -79,15 +125,57 @@ export const ProfilePage = () => {
             <div className="mx-auto max-w-6xl">
                 <section className="mb-8 rounded-[1.5rem] border border-amber-100 bg-white p-6 shadow-sm sm:rounded-[2rem] sm:p-10">
                     <div className="flex items-center gap-4">
-                        <div className="rounded-full bg-amber-100 p-3 text-amber-600">
-                            <UserCircle2 size={32} />
-                        </div>
+                        {profile.user.profileImage?.imageUrl ? (
+                            <img
+                                src={profile.user.profileImage.imageUrl}
+                                alt={profile.user.username}
+                                className="h-16 w-16 rounded-full object-cover ring-4 ring-amber-100"
+                            />
+                        ) : (
+                            <div className="rounded-full bg-amber-100 p-3 text-amber-600">
+                                <UserCircle2 size={32} />
+                            </div>
+                        )}
                         <div>
                             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">Profile</p>
                             <h1 className="mt-1 text-3xl font-semibold text-slate-900">{profile.user.username}</h1>
                             <p className="mt-1 text-slate-500">{profile.numberOfRecipes} recipe{profile.numberOfRecipes === 1 ? "" : "s"}</p>
                         </div>
+                        {canEdit ? (
+                            <button
+                                type="button"
+                                onClick={() => setEditing((value) => !value)}
+                                className="ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-amber-50"
+                            >
+                                <Pencil size={15} /> {editing ? "Cancel" : "Edit profile"}
+                            </button>
+                        ) : null}
                     </div>
+                    {editing ? (
+                        <form onSubmit={saveProfile} className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+                            <input
+                                value={username}
+                                onChange={(event) => setUsername(event.target.value)}
+                                className="rounded-2xl border border-slate-200 px-4 py-3"
+                                placeholder="Username"
+                                required
+                            />
+                            <input
+                                ref={imageInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+                                className="rounded-2xl border border-slate-200 px-3 py-2 text-sm"
+                            />
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="rounded-full bg-amber-500 px-5 py-3 font-medium text-white hover:bg-amber-600 disabled:opacity-60"
+                            >
+                                {saving ? "Saving..." : "Save"}
+                            </button>
+                        </form>
+                    ) : null}
                 </section>
 
                 {profile.recipes.length === 0 ? (

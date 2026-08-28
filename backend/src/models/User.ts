@@ -8,6 +8,10 @@ interface IUserSchema extends Document {
     email: string;
     password: string;
     role: string;
+    profileImage?: {
+        publicId?: string;
+        imageUrl?: string;
+    };
     resetPasswordToken: string;
     resetPasswordExpires: Date;
     generateJWT(): Promise<string>;
@@ -46,6 +50,10 @@ const userSchema = new Schema<IUserSchema>(
             type: String,
             enum: ["user", "admin"],
             default: "user",
+        },
+        profileImage: {
+            type: Object,
+            default: {},
         },
         resetPasswordToken: {
             type: String,
@@ -92,4 +100,3 @@ userSchema.pre("save", async function (next: () => void) {
 
 export const User = model("user", userSchema);
 export type { IUserSchema };
-

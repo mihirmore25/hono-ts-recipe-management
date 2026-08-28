@@ -35,6 +35,7 @@ app.options("*", (c) => {
 // Routes
 app.route("/api/v1/auth", authRoutes);
 app.route("/api/v1/recipes", recipeRoutes);
+app.route("/api/v1/users", userRoutes);
 app.route("/api/v1/admin/users", userRoutes);
 
 dbClient()

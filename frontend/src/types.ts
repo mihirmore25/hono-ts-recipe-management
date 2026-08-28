@@ -4,6 +4,10 @@ export interface User {
     username: string;
     email: string;
     role?: "user" | "admin";
+    profileImage?: {
+        publicId?: string;
+        imageUrl?: string;
+    };
 }
 
 export interface Recipe {

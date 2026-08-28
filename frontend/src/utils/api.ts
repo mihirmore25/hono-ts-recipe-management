@@ -67,4 +67,12 @@ export const adminApi = {
     }) => api.post("/admin/users/createUser", payload),
 };
 
+export const userApi = {
+    getProfile: () => api.get("/users/me"),
+    updateProfile: (id: string, formData: FormData) =>
+        api.put(`/users/${id}/profile`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        }),
+};
+
 export default api;

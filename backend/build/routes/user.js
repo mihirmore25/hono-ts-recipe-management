@@ -5,6 +5,8 @@ const isAdmin_1 = require("../middleware/isAdmin");
 const verify_1 = require("../middleware/verify");
 const user_1 = require("../controllers/user");
 const userRoutes = new hono_1.Hono();
+userRoutes.get("/me", verify_1.verify, user_1.getUserProfile);
+userRoutes.put("/:id/profile", verify_1.verify, user_1.updateUserProfile);
 userRoutes.post("/createUser", verify_1.verify, isAdmin_1.isAdmin, user_1.createUser);
 userRoutes.get("/getUsers", verify_1.verify, isAdmin_1.isAdmin, user_1.getUsers);
 userRoutes.get("/getUser/:id", verify_1.verify, isAdmin_1.isAdmin, user_1.getUser);

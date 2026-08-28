@@ -1,11 +1,13 @@
 import {
     createContext,
     useContext,
+    useEffect,
     useMemo,
     useState,
     type ReactNode,
 } from "react";
 import type { User } from "../types";
+import { userApi } from "../utils/api";
 
 interface AuthContextValue {
     user: User | null;
@@ -33,6 +35,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         return null;
     });
+
+    useEffect(() => {
+        if (!token) return;
+
+        const loadProfile = async () => {
+            try {
+                const response = await userApi.getProfile();
+                const profile = response.data?.data;
+
+                if (profile) {
+                    setUser(profile);
+                    localStorage.setItem("user", JSON.stringify(profile));
+                }
+            } catch (error) {
+                console.error("Failed to refresh user profile:", error);
+            }
+        };
+
+        loadProfile();
+    }, [token]);
 
     const login = (userData: User, authToken: string) => {
         if (!userData || !authToken) {

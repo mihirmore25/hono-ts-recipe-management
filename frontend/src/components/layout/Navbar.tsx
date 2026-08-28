@@ -91,7 +91,9 @@ export const Navbar = () => {
                                 to={`/profile/${user._id ?? user.id ?? ""}`}
                                 className="ml-1 flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs text-slate-600 transition hover:bg-amber-100 hover:text-amber-700 sm:text-sm"
                             >
-                                <UserCircle2 size={16} /> {user.username}
+                                {user.profileImage?.imageUrl ? (
+                                    <img src={user.profileImage.imageUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
+                                ) : <UserCircle2 size={16} />} {user.username}
                             </NavLink>
                         ) : null}
                     </div>
@@ -102,7 +104,9 @@ export const Navbar = () => {
                                 to={`/profile/${user._id ?? user.id ?? ""}`}
                                 className="flex max-w-[9rem] items-center gap-2 truncate rounded-full bg-slate-100 px-3 py-2 text-xs text-slate-600"
                             >
-                                <UserCircle2 size={16} />{" "}
+                                {user.profileImage?.imageUrl ? (
+                                    <img src={user.profileImage.imageUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
+                                ) : <UserCircle2 size={16} />}{" "}
                                 <span className="truncate">{user.username}</span>
                             </NavLink>
                         ) : null}

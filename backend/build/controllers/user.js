@@ -9,9 +9,70 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.getUser = exports.getUsers = exports.createUser = void 0;
+exports.deleteUser = exports.getUser = exports.getUsers = exports.createUser = exports.getUserProfile = exports.updateUserProfile = void 0;
 const User_1 = require("../models/User");
 const mongoose_1 = require("mongoose");
+const cloudinary_1 = require("cloudinary");
+const encode_1 = require("hono/utils/encode");
+const updateUserProfile = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    var _b;
+    const userId = c.req.param("id");
+    const authenticatedUser = c.get("user");
+    if (!authenticatedUser || !(0, mongoose_1.isValidObjectId)(userId)) {
+        return c.json({ status: false, message: "Invalid user profile." }, 400);
+    }
+    if (authenticatedUser._id.toString() !== userId &&
+        authenticatedUser.role !== "admin") {
+        return c.json({ status: false, message: "You can only update your own profile." }, 403);
+    }
+    const formData = yield c.req.formData();
+    const username = String((_b = formData.get("username")) !== null && _b !== void 0 ? _b : "").trim();
+    const image = formData.get("image");
+    const user = yield User_1.User.findById(userId).select("-password -resetPasswordToken -resetPasswordExpires -__v");
+    if (!user) {
+        return c.json({ status: false, message: "User profile not found." }, 404);
+    }
+    if (username)
+        user.username = username;
+    if (image && typeof image === "object" && "arrayBuffer" in image) {
+        const base64 = (0, encode_1.encodeBase64)(yield image.arrayBuffer());
+        const uploadedImage = yield cloudinary_1.v2.uploader.upload(`data:image/png;base64,${base64}`, { resource_type: "auto", folder: "hono_profile_images" });
+        if ((_a = user.profileImage) === null || _a === void 0 ? void 0 : _a.publicId) {
+            yield cloudinary_1.v2.uploader.destroy(user.profileImage.publicId);
+        }
+        user.profileImage = {
+            publicId: uploadedImage.public_id,
+            imageUrl: uploadedImage.secure_url || uploadedImage.url,
+        };
+    }
+    yield user.save();
+    const profile = user.toObject();
+    return c.json({ status: true, data: profile, message: "Profile updated successfully." }, 200);
+});
+exports.updateUserProfile = updateUserProfile;
+const getUserProfile = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    const authenticatedUser = c.get("user");
+    if (!(authenticatedUser === null || authenticatedUser === void 0 ? void 0 : authenticatedUser._id)) {
+        return c.json({
+            status: false,
+            message: "Unable to identify the authenticated user.",
+        }, 401);
+    }
+    const user = yield User_1.User.findById(authenticatedUser._id).select("-password -resetPasswordToken -resetPasswordExpires -__v");
+    if (!user) {
+        return c.json({
+            status: false,
+            message: "User profile not found.",
+        }, 404);
+    }
+    return c.json({
+        status: true,
+        data: user.toObject(),
+        message: "User profile fetched successfully.",
+    }, 200);
+});
+exports.getUserProfile = getUserProfile;
 const createUser = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, email, password, role } = yield c.req.json();
     if (!username || !email || !password) {

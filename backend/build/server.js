@@ -34,6 +34,7 @@ app.options("*", (c) => {
 // Routes
 app.route("/api/v1/auth", auth_1.default);
 app.route("/api/v1/recipes", recipe_1.default);
+app.route("/api/v1/users", user_1.default);
 app.route("/api/v1/admin/users", user_1.default);
 (0, db_1.dbClient)()
     .then()
