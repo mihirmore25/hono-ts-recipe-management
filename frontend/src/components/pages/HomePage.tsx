@@ -78,7 +78,10 @@ export const HomePage = () => {
                                 Create, share, and explore a world of culinary delights with our recipe app. Whether you're a seasoned chef or just starting out, you'll find inspiration for every meal.
                             </p>
                             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
-                                <Link to="/register" className="rounded-full bg-amber-500 px-5 py-3 font-medium text-white shadow hover:bg-amber-600">
+                                <Link
+                                    to={isAuthenticated ? "/recipes/new" : "/register"}
+                                    className="rounded-full bg-amber-500 px-5 py-3 font-medium text-white shadow hover:bg-amber-600"
+                                >
                                     Get Started
                                 </Link>
                                 <Link to="/recipes/new" className="rounded-full border border-slate-200 px-5 py-3 font-medium text-slate-700 hover:bg-slate-50">
