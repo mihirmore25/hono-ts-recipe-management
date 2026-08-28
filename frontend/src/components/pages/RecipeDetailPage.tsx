@@ -143,7 +143,8 @@ export const RecipeDetailPage = () => {
             </div>
             <div className="mx-auto max-w-6xl relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem]">
                 <FloatingFoodIcons
-                    className="z-0"
+                    className="z-10"
+                    mobileCount={10}
                     desktopOpacity={0.22}
                     mobileOpacity={0.18}
                     desktopSizeOffset={6}
@@ -151,7 +152,7 @@ export const RecipeDetailPage = () => {
                     desktopFilter="drop-shadow(0 6px 10px rgba(15, 23, 42, 0.08))"
                     mobileFilter="drop-shadow(0 6px 8px rgba(15, 23, 42, 0.06))"
                 />
-                <div className="relative z-10">
+                <div className="relative z-20">
                     <button
                         type="button"
                         onClick={() => setShowImagePreview(true)}
