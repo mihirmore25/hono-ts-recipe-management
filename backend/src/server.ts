@@ -9,11 +9,15 @@ import { cloudinaryMiddleware } from "./middleware/cloudinary";
 import userRoutes from "./routes/user";
 
 const app = new Hono();
-const allowedOrigins = [
+const allowedOrigins = new Set(
+    [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     process.env.CLIENT_URL,
-].filter((origin): origin is string => Boolean(origin));
+    ]
+        .filter((origin): origin is string => Boolean(origin))
+        .map((origin) => origin.trim().replace(/\/+$/, "")),
+);
 
 app.use(logger());
 app.use(poweredBy({ serverName: "Recipe Management REST API with Hono" }));
@@ -21,7 +25,12 @@ app.use(cloudinaryMiddleware);
 app.use(
     "*",
     cors({
-        origin: allowedOrigins,
+        origin: (origin) => {
+            const normalizedOrigin = origin?.trim().replace(/\/+$/, "");
+            return normalizedOrigin && allowedOrigins.has(normalizedOrigin)
+                ? origin
+                : undefined;
+        },
         allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allowHeaders: ["Content-Type", "Authorization"],
         credentials: true,

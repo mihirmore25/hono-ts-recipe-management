@@ -13,16 +13,23 @@ const recipe_1 = __importDefault(require("./routes/recipe"));
 const cloudinary_1 = require("./middleware/cloudinary");
 const user_1 = __importDefault(require("./routes/user"));
 const app = new hono_1.Hono();
-const allowedOrigins = [
+const allowedOrigins = new Set([
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     process.env.CLIENT_URL,
-].filter((origin) => Boolean(origin));
+]
+    .filter((origin) => Boolean(origin))
+    .map((origin) => origin.trim().replace(/\/+$/, "")));
 app.use((0, logger_1.logger)());
 app.use((0, powered_by_1.poweredBy)({ serverName: "Recipe Management REST API with Hono" }));
 app.use(cloudinary_1.cloudinaryMiddleware);
 app.use("*", (0, cors_1.cors)({
-    origin: allowedOrigins,
+    origin: (origin) => {
+        const normalizedOrigin = origin === null || origin === void 0 ? void 0 : origin.trim().replace(/\/+$/, "");
+        return normalizedOrigin && allowedOrigins.has(normalizedOrigin)
+            ? origin
+            : undefined;
+    },
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
