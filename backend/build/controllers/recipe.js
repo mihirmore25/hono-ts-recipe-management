@@ -52,6 +52,32 @@ const normalizeCsvHeader = (header) => {
         .replace(/[\s_-]+/g, "");
     return csvHeaderAliases[normalized] || normalized;
 };
+const normalizeRecipeList = (value) => {
+    if (typeof value !== "string")
+        return [];
+    const items = value
+        .split(/\r?\n/)
+        .flatMap((line) => line.split(/(?=\b\d+\.\s+)/))
+        .map((item) => item.replace(/^\d+\.\s*/, "").trim())
+        .filter(Boolean);
+    const repaired = [];
+    for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const next = items[index + 1];
+        if (/^\d+\/$/.test(item) && next) {
+            repaired.push(`${item}${next}`);
+            index += 1;
+            continue;
+        }
+        const previous = repaired[repaired.length - 1];
+        if (previous === null || previous === void 0 ? void 0 : previous.endsWith("(")) {
+            repaired[repaired.length - 1] = `${previous}${item}`;
+            continue;
+        }
+        repaired.push(item);
+    }
+    return repaired;
+};
 const parseCsv = (content) => {
     const rows = [];
     let row = [];
@@ -275,8 +301,8 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
             totalTime,
             prepTime,
             cookingTime,
-            ingredients,
-            instructions,
+            ingredients: normalizeRecipeList(ingredients),
+            instructions: normalizeRecipeList(instructions),
             calories,
             carbs,
             protein,

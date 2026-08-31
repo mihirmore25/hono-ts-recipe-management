@@ -46,6 +46,38 @@ const normalizeCsvHeader = (header: string) => {
     return csvHeaderAliases[normalized] || normalized;
 };
 
+const normalizeRecipeList = (value: string | File | undefined) => {
+    if (typeof value !== "string") return [];
+
+    const items = value
+        .split(/\r?\n/)
+        .flatMap((line) => line.split(/(?=\b\d+\.\s+)/))
+        .map((item) => item.replace(/^\d+\.\s*/, "").trim())
+        .filter(Boolean);
+
+    const repaired: string[] = [];
+    for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const next = items[index + 1];
+
+        if (/^\d+\/$/.test(item) && next) {
+            repaired.push(`${item}${next}`);
+            index += 1;
+            continue;
+        }
+
+        const previous = repaired[repaired.length - 1];
+        if (previous?.endsWith("(")) {
+            repaired[repaired.length - 1] = `${previous}${item}`;
+            continue;
+        }
+
+        repaired.push(item);
+    }
+
+    return repaired;
+};
+
 const parseCsv = (content: string): string[][] => {
     const rows: string[][] = [];
     let row: string[] = [];
@@ -332,8 +364,8 @@ export const createRecipe = async (c: Context) => {
             totalTime,
             prepTime,
             cookingTime,
-            ingredients,
-            instructions,
+            ingredients: normalizeRecipeList(ingredients),
+            instructions: normalizeRecipeList(instructions),
             calories,
             carbs,
             protein,

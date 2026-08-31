@@ -11,8 +11,10 @@ import {
     bulkCreateRecipes,
 } from "../controllers/recipe";
 import { isAdmin } from "../middleware/isAdmin";
+import { generateRecipe } from "../controllers/ai";
 const recipeRoutes = new Hono();
 
+recipeRoutes.post("/ai/generate", verify, generateRecipe);
 recipeRoutes.post("/", verify, createRecipe);
 recipeRoutes.post("/bulk", verify, isAdmin, bulkCreateRecipes);
 recipeRoutes.get("/", verify, getRecipes);
