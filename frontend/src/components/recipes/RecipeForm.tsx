@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { ChefHat, Coffee, Croissant, Pizza, Salad, Soup } from "lucide-react";
+import {
+    ChefHat,
+    Coffee,
+    Croissant,
+    Pizza,
+    Salad,
+    Soup,
+    Sparkles,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { recipeApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
@@ -23,10 +31,54 @@ const emptyRecipe = {
 
 const toFormList = (value: string[] | string | undefined) => {
     const items = (Array.isArray(value) ? value : (value?.split("\n") ?? []))
+        .flatMap((item) =>
+            typeof item === "string" ? item.split(/\r?\n|;/) : [],
+        )
         .map((item) => item.trim())
         .filter(Boolean);
 
-    return items;
+    const repaired: string[] = [];
+    for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const next = items[index + 1];
+
+        if (/^\d+\/$/.test(item) && next) {
+            repaired.push(`${item}${next}`);
+            index += 1;
+            continue;
+        }
+
+        const previous = repaired[repaired.length - 1];
+        if (previous?.endsWith("(")) {
+            repaired[repaired.length - 1] = `${previous}${item}`;
+            continue;
+        }
+
+        repaired.push(item);
+    }
+
+    return repaired;
+};
+
+const normalizeGeneratedList = (
+    value: unknown,
+    type: "ingredient" | "instruction",
+) => {
+    if (!Array.isArray(value)) return [];
+
+    const items = value.flatMap((item) => {
+        if (typeof item !== "string") return [];
+        const pattern = /(?=\b\d+\.\s*)/;
+
+        return item
+            .replace(/\s+/g, " ")
+            .trim()
+            .split(type === "instruction" ? pattern : /\r?\n|;/)
+            .map((part) => part.replace(/^\d+\.\s*/, "").trim())
+            .filter(Boolean);
+    });
+
+    return type === "ingredient" ? toFormList(items) : items;
 };
 
 type NumericRecipeField =
@@ -61,6 +113,9 @@ export const RecipeForm = () => {
     >(() => new Set());
     const [error, setError] = useState("");
     const [showConfetti, setShowConfetti] = useState(false);
+    const [aiIdea, setAiIdea] = useState("");
+    const [generating, setGenerating] = useState(false);
+    const [generationProgress, setGenerationProgress] = useState(0);
 
     const FoodConfetti = ({ onFinish }: { onFinish?: () => void }) => {
         const icons = [ChefHat, Pizza, Croissant, Coffee, Salad, Soup];
@@ -203,6 +258,51 @@ export const RecipeForm = () => {
         setInstructionInput("");
     };
 
+    const generateWithAi = async () => {
+        if (aiIdea.trim().length < 3) {
+            setError("Describe the recipe you want AI to create.");
+            return;
+        }
+
+        setGenerating(true);
+        setError("");
+        setGenerationProgress(8);
+        const progressTimer = window.setInterval(() => {
+            setGenerationProgress((current) =>
+                current >= 92 ? current : Math.min(current + 7, 92),
+            );
+        }, 450);
+
+        try {
+            const response = await recipeApi.generate(aiIdea.trim());
+            const generated = response.data?.data;
+            if (!response.data?.status || !generated) {
+                throw new Error(response.data?.message || "Unable to generate recipe.");
+            }
+
+            setRecipe((current) => ({
+                ...current,
+                ...generated,
+            }));
+            setIngredients(
+                normalizeGeneratedList(generated.ingredients, "ingredient"),
+            );
+            setInstructions(
+                normalizeGeneratedList(generated.instructions, "instruction"),
+            );
+            setGenerationProgress(100);
+        } catch (err: any) {
+            setError(
+                err?.response?.data?.message ||
+                    err?.message ||
+                    "Unable to generate recipe with AI.",
+            );
+        } finally {
+            window.clearInterval(progressTimer);
+            setGenerating(false);
+        }
+    };
+
     const clearInitialNumber = (
         field: NumericRecipeField,
         initialValue: number,
@@ -310,6 +410,59 @@ export const RecipeForm = () => {
                         {id ? "Edit recipe" : "Create a new recipe"}
                     </h1>
                 </div>
+
+                {!id ? (
+                    <div className="mb-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:p-5">
+                        <p className="text-sm font-semibold text-violet-900">
+                            Generate a recipe with Gemini AI
+                        </p>
+                        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                            <input
+                                value={aiIdea}
+                                onChange={(event) => setAiIdea(event.target.value)}
+                                placeholder="e.g. high-protein vegetarian pasta"
+                                maxLength={500}
+                                className="min-w-0 flex-1 rounded-2xl border border-violet-200 bg-white px-4 py-3 focus:border-violet-500 focus:outline-none"
+                            />
+                            <button
+                                type="button"
+                                onClick={generateWithAi}
+                                disabled={generating}
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <Sparkles size={16} aria-hidden="true" />
+                                {generating ? "Generating..." : "Generate with AI"}
+                            </button>
+                        </div>
+                        {generating ? (
+                            <div
+                                className="mt-3"
+                                role="status"
+                                aria-live="polite"
+                            >
+                                <div className="mb-1 flex items-center justify-between text-xs font-medium text-violet-700">
+                                    <span>
+                                        {generationProgress < 35
+                                            ? "Understanding your idea..."
+                                            : generationProgress < 70
+                                              ? "Creating ingredients and instructions..."
+                                              : "Finishing nutrition details..."}
+                                    </span>
+                                    <span>{generationProgress}%</span>
+                                </div>
+                                <div className="h-2 overflow-hidden rounded-full bg-violet-100">
+                                    <div
+                                        className="h-full rounded-full bg-violet-600 transition-[width] duration-300"
+                                        style={{ width: `${generationProgress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ) : null}
+                        <p className="mt-2 text-xs text-violet-700">
+                            Review and edit the generated fields before saving.
+                        </p>
+                    </div>
+                ) : null}
 
                 <form
                     onSubmit={handleSubmit}

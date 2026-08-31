@@ -15,6 +15,44 @@ import { recipeApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+
+const displayRecipeList = (
+    value: string[] | string | undefined,
+    type: "ingredient" | "instruction",
+) => {
+    const values = Array.isArray(value) ? value : [String(value ?? "")];
+    const items = values
+        .flatMap((item) => item.split(/\r?\n/))
+        .flatMap((item) =>
+            type === "instruction" ? item.split(/(?=\b\d+\.\s+)/) : [item],
+        )
+        .map((item) => item.replace(/^\d+\.\s*/, "").trim())
+        .filter(Boolean);
+
+    if (type === "instruction") return items;
+
+    const repaired: string[] = [];
+    for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const next = items[index + 1];
+        const previous = repaired[repaired.length - 1];
+
+        if (/^\d+\/$/.test(item) && next) {
+            repaired.push(`${item}${next}`);
+            index += 1;
+            continue;
+        }
+
+        if (previous && previous.endsWith("(")) {
+            repaired[repaired.length - 1] = `${previous}${item}`;
+            continue;
+        }
+
+        repaired.push(item);
+    }
+
+    return repaired;
+};
 import { RecipePageNavigation } from "../recipes/RecipePageNavigation";
 import { LikeLoginModal } from "../recipes/LikeLoginModal";
 import { FloatingFoodIcons } from "../layout/FloatingFoodIcons";
@@ -278,11 +316,10 @@ export const RecipeDetailPage = () => {
                                     Ingredients
                                 </h2>
                                 <ul className="mt-4 flex flex-wrap gap-3 text-slate-600">
-                                    {(Array.isArray(recipe.ingredients)
-                                        ? recipe.ingredients
-                                        : String(recipe.ingredients).split("\n")
+                                    {displayRecipeList(
+                                        recipe.ingredients,
+                                        "ingredient",
                                     )
-                                        .filter(Boolean)
                                         .map((item, i) => (
                                             <li
                                                 key={i}
@@ -298,13 +335,10 @@ export const RecipeDetailPage = () => {
                                     Instructions
                                 </h2>
                                 <ol className="mt-4 space-y-3 text-slate-600">
-                                    {(Array.isArray(recipe.instructions)
-                                        ? recipe.instructions
-                                        : String(recipe.instructions).split(
-                                              "\n",
-                                          )
+                                    {displayRecipeList(
+                                        recipe.instructions,
+                                        "instruction",
                                     )
-                                        .filter(Boolean)
                                         .map((item, i) => (
                                             <li
                                                 key={i}

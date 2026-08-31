@@ -40,6 +40,8 @@ export const authApi = {
 };
 
 export const recipeApi = {
+    generate: (idea: string) =>
+        api.post("/recipes/ai/generate", { idea }),
     list: (page = 1, limit = 9, search = "") =>
         api.get("/recipes", { params: { page, limit, search } }),
     get: (id: string) => api.get(`/recipes/${id}`),
