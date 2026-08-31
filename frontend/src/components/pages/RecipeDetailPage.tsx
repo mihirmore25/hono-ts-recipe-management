@@ -239,7 +239,7 @@ export const RecipeDetailPage = () => {
                                 <h2 className="text-xl font-semibold text-slate-900">
                                     Ingredients
                                 </h2>
-                                <ul className="mt-4 space-y-3 text-slate-600">
+                                <ul className="mt-4 flex flex-wrap gap-3 text-slate-600">
                                     {(Array.isArray(recipe.ingredients)
                                         ? recipe.ingredients
                                         : String(recipe.ingredients).split("\n")
@@ -248,7 +248,7 @@ export const RecipeDetailPage = () => {
                                         .map((item, i) => (
                                             <li
                                                 key={i}
-                                                className="rounded-2xl bg-slate-50 px-4 py-3"
+                                                className="w-fit max-w-full rounded-2xl bg-slate-50 px-4 py-3 break-words"
                                             >
                                                 {item}
                                             </li>
