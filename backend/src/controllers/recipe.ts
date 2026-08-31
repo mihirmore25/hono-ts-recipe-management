@@ -358,7 +358,7 @@ export const createRecipe = async (c: Context) => {
 export const getRecipes = async (c: Context) => {
     const search = c.req.query("search")?.trim() || "";
     const page = Math.max(Number(c.req.query("page")) || 1, 1);
-    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 8, 1), 50);
+    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 9, 1), 50);
     const skip = (page - 1) * limit;
     const filter = search ? { $text: { $search: search } } : {};
     const totalRecipes = await Recipe.countDocuments(filter);
@@ -394,11 +394,15 @@ export const getRecipe = async (c: Context) => {
         );
     }
 
-    const recipe: IRecipeSchema | null = await Recipe.findById(recipeId).select(
-        "-__v -createdAt -updatedAt",
-    );
+    const recipe: IRecipeSchema | null = await Recipe.findById(recipeId)
+        .populate({
+            path: "user",
+            model: "user",
+            select: "username email profileImage",
+        })
+        .select("-__v -createdAt -updatedAt");
 
-    if (recipe === null || undefined || 0) {
+    if (!recipe) {
         return c.json(
             {
                 status: false,

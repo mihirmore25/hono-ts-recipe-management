@@ -15,6 +15,16 @@ export const RecipePagination = ({
         <div className="mt-8 flex items-center justify-center gap-3">
             <button
                 type="button"
+                aria-label="Go to first page"
+                title="First page"
+                disabled={page === 1}
+                onClick={() => onPageChange(1)}
+                className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                &lt;&lt;
+            </button>
+            <button
+                type="button"
                 disabled={page === 1}
                 onClick={() => onPageChange(page - 1)}
                 className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -31,6 +41,16 @@ export const RecipePagination = ({
                 className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Next
+            </button>
+            <button
+                type="button"
+                aria-label="Go to last page"
+                title="Last page"
+                disabled={page === totalPages}
+                onClick={() => onPageChange(totalPages)}
+                className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                &gt;&gt;
             </button>
         </div>
     );

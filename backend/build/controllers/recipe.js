@@ -300,7 +300,7 @@ const getRecipes = (c) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const search = ((_a = c.req.query("search")) === null || _a === void 0 ? void 0 : _a.trim()) || "";
     const page = Math.max(Number(c.req.query("page")) || 1, 1);
-    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 8, 1), 50);
+    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 9, 1), 50);
     const skip = (page - 1) * limit;
     const filter = search ? { $text: { $search: search } } : {};
     const totalRecipes = yield Recipe_1.Recipe.countDocuments(filter);
@@ -330,8 +330,14 @@ const getRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
             message: "Please search recipe with valid recipe id.",
         }, 404);
     }
-    const recipe = yield Recipe_1.Recipe.findById(recipeId).select("-__v -createdAt -updatedAt");
-    if (recipe === null || undefined || 0) {
+    const recipe = yield Recipe_1.Recipe.findById(recipeId)
+        .populate({
+        path: "user",
+        model: "user",
+        select: "username email profileImage",
+    })
+        .select("-__v -createdAt -updatedAt");
+    if (!recipe) {
         return c.json({
             status: false,
             message: `Recipe did not found with ${recipeId} id.`,

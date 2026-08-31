@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, Flame, Pencil, Search, UserCircle2 } from "lucide-react";
+import { Clock3, Dumbbell, Flame, Pencil, Search, UserCircle2, Wheat } from "lucide-react";
 import { recipeApi, userApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe, User } from "../../types";
@@ -37,7 +37,7 @@ export const ProfilePage = () => {
             setError("");
 
             try {
-                const response = await recipeApi.userRecipes(id, page, 8, search);
+                const response = await recipeApi.userRecipes(id, page, 9, search);
                 const data = response.data?.data;
 
                 if (data && !Array.isArray(data)) {
@@ -139,7 +139,7 @@ export const ProfilePage = () => {
         <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
             <div className="mx-auto max-w-6xl">
                 <section className="mb-8 rounded-[1.5rem] border border-amber-100 bg-white p-6 shadow-sm sm:rounded-[2rem] sm:p-10">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                         {profile.user.profileImage?.imageUrl ? (
                             <img
                                 src={profile.user.profileImage.imageUrl}
@@ -151,7 +151,7 @@ export const ProfilePage = () => {
                                 <UserCircle2 size={32} />
                             </div>
                         )}
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">Profile</p>
                             <h1 className="mt-1 text-3xl font-semibold text-slate-900">{profile.user.username}</h1>
                             <p className="mt-1 text-slate-500">{profile.numberOfRecipes} recipe{profile.numberOfRecipes === 1 ? "" : "s"}</p>
@@ -160,14 +160,14 @@ export const ProfilePage = () => {
                             <button
                                 type="button"
                                 onClick={() => setEditing((value) => !value)}
-                                className="ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-amber-50"
+                                className="sm:ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-amber-50"
                             >
                                 <Pencil size={15} /> {editing ? "Cancel" : "Edit profile"}
                             </button>
                         ) : null}
                     </div>
                     {editing ? (
-                        <form onSubmit={saveProfile} className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+                        <form onSubmit={saveProfile} className="mt-6 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                             <input
                                 value={username}
                                 onChange={(event) => setUsername(event.target.value)}
@@ -180,7 +180,7 @@ export const ProfilePage = () => {
                                 type="file"
                                 accept="image/*"
                                 onChange={(event) => setImage(event.target.files?.[0] ?? null)}
-                                className="rounded-2xl border border-slate-200 px-3 py-2 text-sm"
+                                className="w-full min-w-0 rounded-2xl border border-slate-200 px-3 py-2 text-sm"
                             />
                             <button
                                 type="submit"
@@ -231,6 +231,8 @@ export const ProfilePage = () => {
                                     <div className="flex flex-wrap gap-3 text-sm text-slate-500">
                                         <span className="flex items-center gap-1"><Clock3 size={14} /> {formatDuration(recipe.totalTime)}</span>
                                         <span className="flex items-center gap-1"><Flame size={14} /> {recipe.calories} kcal</span>
+                                        <span className="flex items-center gap-1"><Wheat size={14} /> {recipe.carbs}g carbs</span>
+                                        <span className="flex items-center gap-1"><Dumbbell size={14} /> {recipe.protein}g protein</span>
                                     </div>
                                 </div>
                             </Link>

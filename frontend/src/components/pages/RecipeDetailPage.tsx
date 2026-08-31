@@ -4,8 +4,11 @@ import {
     Clock3,
     Flame,
     Heart,
+    Wheat,
+    Dumbbell,
     PencilLine,
     Trash2,
+    UserCircle2,
     X,
 } from "lucide-react";
 import { recipeApi } from "../../utils/api";
@@ -29,13 +32,23 @@ export const RecipeDetailPage = () => {
     const [deleteError, setDeleteError] = useState("");
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [showImagePreview, setShowImagePreview] = useState(false);
+    const [loadError, setLoadError] = useState("");
 
     useEffect(() => {
         if (!id) return;
         const loadRecipe = async () => {
             try {
                 const response = await recipeApi.get(id);
-                setRecipe(response.data?.data);
+                const data = response.data?.data;
+                if (!data) {
+                    throw new Error(
+                        response.data?.message || "Recipe not found.",
+                    );
+                }
+                setRecipe(data);
+            } catch (error) {
+                console.error("Failed to load recipe:", error);
+                setLoadError("Unable to load this recipe.");
             } finally {
                 setLoading(false);
             }
@@ -130,7 +143,7 @@ export const RecipeDetailPage = () => {
     if (!recipe)
         return (
             <div className="px-4 py-12 text-center text-slate-500">
-                Recipe not found.
+                {loadError || "Recipe not found."}
             </div>
         );
 
@@ -177,6 +190,25 @@ export const RecipeDetailPage = () => {
                                 <h1 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
                                     {recipe.title}
                                 </h1>
+                                {recipe.user &&
+                                typeof recipe.user === "object" &&
+                                recipe.user._id ? (
+                                    <Link
+                                        to={`/profile/${recipe.user._id}`}
+                                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs text-slate-600 transition hover:bg-amber-100 hover:text-amber-700 sm:text-sm"
+                                    >
+                                        {recipe.user.profileImage?.imageUrl ? (
+                                            <img
+                                                src={recipe.user.profileImage.imageUrl}
+                                                alt=""
+                                                className="h-5 w-5 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <UserCircle2 size={16} />
+                                        )}
+                                        Created by {recipe.user.username}
+                                    </Link>
+                                ) : null}
                             </div>
                             {canManage ? (
                                 <div className="flex flex-wrap gap-2">
@@ -214,6 +246,12 @@ export const RecipeDetailPage = () => {
                             </div>
                             <div className="flex items-center gap-2 text-slate-700">
                                 <Flame size={16} /> {recipe.calories} kcal
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-700">
+                                <Wheat size={16} /> {recipe.carbs}g carbs
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-700">
+                                <Dumbbell size={16} /> {recipe.protein}g protein
                             </div>
                             <button
                                 type="button"

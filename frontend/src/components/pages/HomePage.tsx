@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock3, Flame, Heart, Search, Sparkles } from "lucide-react";
+import { Clock3, Flame, Heart, Search, Sparkles, Wheat, Dumbbell } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { recipeApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
@@ -55,7 +55,7 @@ export const HomePage = () => {
     useEffect(() => {
         const loadRecipes = async () => {
             try {
-                const response = await recipeApi.list(page, 8, search);
+                const response = await recipeApi.list(page, 9, search);
                 setRecipes(response.data?.data ?? []);
                 setTotalPages(response.data?.pagination?.totalPages ?? 1);
             } catch (error) {
@@ -195,6 +195,12 @@ export const HomePage = () => {
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <Flame size={14} /> {recipe.calories} kcal
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Wheat size={14} /> {recipe.carbs}g carbs
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Dumbbell size={14} /> {recipe.protein}g protein
                                                 </span>
                                             </div>
                                         </div>
