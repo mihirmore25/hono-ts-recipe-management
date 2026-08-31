@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, Flame, Pencil, UserCircle2 } from "lucide-react";
+import { Clock3, Flame, Pencil, Search, UserCircle2 } from "lucide-react";
 import { recipeApi, userApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe, User } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+import { RecipePagination } from "../recipes/RecipePagination";
 
 interface UserRecipesResponse {
     numberOfRecipes: number;
@@ -21,6 +22,10 @@ export const ProfilePage = () => {
     const [editing, setEditing] = useState(false);
     const [username, setUsername] = useState("");
     const [image, setImage] = useState<File | null>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [search, setSearch] = useState("");
+    const [searchInput, setSearchInput] = useState("");
     const [saving, setSaving] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +37,7 @@ export const ProfilePage = () => {
             setError("");
 
             try {
-                const response = await recipeApi.userRecipes(id);
+                const response = await recipeApi.userRecipes(id, page, 8, search);
                 const data = response.data?.data;
 
                 if (data && !Array.isArray(data)) {
@@ -41,6 +46,7 @@ export const ProfilePage = () => {
                         recipes: data.recipes ?? [],
                         user: data.user,
                     });
+                    setTotalPages(data.pagination?.totalPages ?? 1);
                     setUsername(data.user?.username ?? "");
                 } else {
                     setProfile(null);
@@ -54,7 +60,16 @@ export const ProfilePage = () => {
         };
 
         loadProfile();
-    }, [id]);
+    }, [id, page, search]);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setPage(1);
+            setSearch(searchInput.trim());
+        }, 1000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchInput]);
 
     const canEdit =
         Boolean(id) &&
@@ -177,6 +192,21 @@ export const ProfilePage = () => {
                         </form>
                     ) : null}
                 </section>
+                <form
+                    onSubmit={(event) => event.preventDefault()}
+                    className="mb-6 w-full"
+                >
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                            value={searchInput}
+                            onChange={(event) => setSearchInput(event.target.value)}
+                            placeholder="Search this user's recipes..."
+                            aria-label="Search this user's recipes"
+                            className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                        />
+                    </div>
+                </form>
 
                 {profile.recipes.length === 0 ? (
                     <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
@@ -207,6 +237,11 @@ export const ProfilePage = () => {
                         ))}
                     </div>
                 )}
+                <RecipePagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                />
             </div>
         </div>
     );

@@ -101,5 +101,12 @@ const recipeSchema = new Schema<IRecipeSchema>(
     { timestamps: true }
 );
 
+recipeSchema.index({
+    title: "text",
+    description: "text",
+    ingredients: "text",
+    instructions: "text",
+});
+
 export const Recipe = model("recipe", recipeSchema);
 export type { IRecipeSchema };

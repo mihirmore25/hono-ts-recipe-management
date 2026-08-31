@@ -1,11 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock3, Flame, Heart, Sparkles } from "lucide-react";
+import { Clock3, Flame, Heart, Search, Sparkles } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { recipeApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe } from "../../types";
 import { LikeLoginModal } from "../recipes/LikeLoginModal";
+import { RecipePagination } from "../recipes/RecipePagination";
 
 export const HomePage = () => {
     const { isAuthenticated } = useAuth();
@@ -14,6 +15,10 @@ export const HomePage = () => {
     const [likedRecipeIds, setLikedRecipeIds] = useState<Record<string, boolean>>({});
     const [likingRecipeIds, setLikingRecipeIds] = useState<Record<string, boolean>>({});
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [search, setSearch] = useState("");
+    const [searchInput, setSearchInput] = useState("");
 
     const handleLike = async (recipeId?: string) => {
         if (!recipeId || likedRecipeIds[recipeId] || likingRecipeIds[recipeId]) {
@@ -50,8 +55,9 @@ export const HomePage = () => {
     useEffect(() => {
         const loadRecipes = async () => {
             try {
-                const response = await recipeApi.list();
+                const response = await recipeApi.list(page, 8, search);
                 setRecipes(response.data?.data ?? []);
+                setTotalPages(response.data?.pagination?.totalPages ?? 1);
             } catch (error) {
                 console.error(error);
             } finally {
@@ -60,7 +66,16 @@ export const HomePage = () => {
         };
 
         loadRecipes();
-    }, []);
+    }, [page, search]);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setPage(1);
+            setSearch(searchInput.trim());
+        }, 1000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchInput]);
 
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_55%)] px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
@@ -109,6 +124,21 @@ export const HomePage = () => {
                                 Fresh from the kitchen
                             </h2>
                         </div>
+                        <form
+                            onSubmit={(event) => event.preventDefault()}
+                            className="mb-6 w-full"
+                        >
+                            <div className="relative flex-1">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                <input
+                                    value={searchInput}
+                                    onChange={(event) => setSearchInput(event.target.value)}
+                                    placeholder="Search recipes..."
+                                    aria-label="Search recipes"
+                                    className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                                />
+                            </div>
+                        </form>
                     </div>
 
                     {loading ? (
@@ -190,6 +220,11 @@ export const HomePage = () => {
                             ))}
                         </div>
                     )}
+                    <RecipePagination
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                    />
                 </section>
             </div>
             <LikeLoginModal

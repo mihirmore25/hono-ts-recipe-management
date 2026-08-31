@@ -78,4 +78,10 @@ const recipeSchema = new mongoose_1.Schema({
         ref: "User",
     },
 }, { timestamps: true });
+recipeSchema.index({
+    title: "text",
+    description: "text",
+    ingredients: "text",
+    instructions: "text",
+});
 exports.Recipe = (0, mongoose_1.model)("recipe", recipeSchema);

@@ -6,6 +6,214 @@ import { isValidObjectId } from "mongoose";
 import { IUserSchema, User } from "../models/User";
 import { ILikedRecipe, LikedRecipe } from "../models/LikedRecipe";
 
+const requiredBulkRecipeFields = [
+    "title",
+    "description",
+    "totalTime",
+    "prepTime",
+    "cookingTime",
+    "ingredients",
+    "instructions",
+    "calories",
+    "carbs",
+    "protein",
+    "fat",
+    "image",
+] as const;
+
+const csvHeaderAliases: Record<string, string> = {
+    title: "title",
+    description: "description",
+    totaltime: "totalTime",
+    preptime: "prepTime",
+    cookingtime: "cookingTime",
+    ingredients: "ingredients",
+    instructions: "instructions",
+    calories: "calories",
+    carbs: "carbs",
+    protein: "protein",
+    fat: "fat",
+    image: "image",
+};
+
+const normalizeCsvHeader = (header: string) => {
+    const normalized = header
+        .replace(/^\uFEFF/, "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, "");
+
+    return csvHeaderAliases[normalized] || normalized;
+};
+
+const parseCsv = (content: string): string[][] => {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let field = "";
+    let quoted = false;
+
+    for (let index = 0; index < content.length; index += 1) {
+        const character = content[index];
+        const nextCharacter = content[index + 1];
+
+        if (character === '"' && quoted && nextCharacter === '"') {
+            field += '"';
+            index += 1;
+        } else if (character === '"') {
+            quoted = !quoted;
+        } else if (character === "," && !quoted) {
+            row.push(field.trim());
+            field = "";
+        } else if ((character === "\n" || character === "\r") && !quoted) {
+            if (character === "\r" && nextCharacter === "\n") index += 1;
+            row.push(field.trim());
+            if (row.some((value) => value !== "")) rows.push(row);
+            row = [];
+            field = "";
+        } else {
+            field += character;
+        }
+    }
+
+    if (field || row.length) {
+        row.push(field.trim());
+        if (row.some((value) => value !== "")) rows.push(row);
+    }
+
+    return rows;
+};
+
+export const bulkCreateRecipes = async (c: Context) => {
+    try {
+        const formData = await c.req.formData();
+        const file = formData.get("file");
+
+        if (
+            !file ||
+            typeof file !== "object" ||
+            !("text" in file) ||
+            typeof (file as File).text !== "function"
+        ) {
+            return c.json(
+                { status: false, message: "Please upload a CSV file using the file field." },
+                400,
+            );
+        }
+
+        const rows = parseCsv(await (file as File).text());
+        if (rows.length < 2) {
+            return c.json(
+                { status: false, message: "The CSV must contain a header and at least one recipe." },
+                400,
+            );
+        }
+
+        const headers = rows[0].map(normalizeCsvHeader);
+        const missingHeaders = requiredBulkRecipeFields.filter(
+            (field) => !headers.includes(field),
+        );
+        if (missingHeaders.length) {
+            return c.json(
+                {
+                    status: false,
+                    message: `Missing CSV columns: ${missingHeaders.join(", ")}.`,
+                },
+                400,
+            );
+        }
+
+        const admin = c.get("user") as IUserSchema;
+        const recipesToInsert: Partial<IRecipeSchema>[] = [];
+        const errors: { row: number; message: string }[] = [];
+
+        for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+            const values = rows[rowIndex];
+            const row = Object.fromEntries(
+                headers.map((header, index) => [header, values[index] ?? ""]),
+            );
+            const numericFields = [
+                "totalTime",
+                "prepTime",
+                "cookingTime",
+                "calories",
+                "carbs",
+                "protein",
+                "fat",
+            ];
+            const invalidNumber = numericFields.find((field) => {
+                const value = Number(row[field]);
+                return row[field] === "" || !Number.isInteger(value) || value < 0;
+            });
+
+            if (
+                !row.title ||
+                !row.description ||
+                !row.ingredients ||
+                !row.instructions ||
+                !row.image
+            ) {
+                errors.push({ row: rowIndex + 1, message: "Required value is missing." });
+                continue;
+            }
+            if (invalidNumber) {
+                errors.push({
+                    row: rowIndex + 1,
+                    message: `${invalidNumber} must be a whole number greater than or equal to 0.`,
+                });
+                continue;
+            }
+            try {
+                const uploadedImage = await cloudinary.uploader.upload(row.image, {
+                    resource_type: "image",
+                    folder: "hono_uploads",
+                });
+                recipesToInsert.push({
+                    title: row.title,
+                    description: row.description,
+                    totalTime: Number(row.totalTime),
+                    prepTime: Number(row.prepTime),
+                    cookingTime: Number(row.cookingTime),
+                    ingredients: row.ingredients.split(";").map((item) => item.trim()),
+                    instructions: row.instructions.split(";").map((item) => item.trim()),
+                    calories: Number(row.calories),
+                    carbs: Number(row.carbs),
+                    protein: Number(row.protein),
+                    fat: Number(row.fat),
+                    recipeImage: {
+                        publicId: uploadedImage.public_id,
+                        imageUrl: uploadedImage.secure_url || uploadedImage.url,
+                    },
+                    user: admin._id,
+                });
+            } catch (error) {
+                errors.push({
+                    row: rowIndex + 1,
+                    message: `Image upload failed: ${(error as Error).message}`,
+                });
+            }
+        }
+
+        const createdRecipes = recipesToInsert.length
+            ? await Recipe.insertMany(recipesToInsert)
+            : [];
+
+        return c.json({
+            status: errors.length === 0,
+            data: {
+                total: rows.length - 1,
+                created: createdRecipes.length,
+                failed: errors.length,
+                errors,
+            },
+            message: errors.length
+                ? "Bulk import completed with some failed rows."
+                : "Bulk recipes imported successfully.",
+        }, errors.length === rows.length - 1 ? 400 : 201);
+    } catch (error) {
+        return c.json({ status: false, message: (error as Error).message }, 500);
+    }
+};
+
 export const createRecipe = async (c: Context) => {
     try {
         const formBody = await c.req.formData();
@@ -148,21 +356,29 @@ export const createRecipe = async (c: Context) => {
 };
 
 export const getRecipes = async (c: Context) => {
-    const recipes: IRecipeSchema[] = await Recipe.find()
-        .sort({ createdAt: -1 })
+    const search = c.req.query("search")?.trim() || "";
+    const page = Math.max(Number(c.req.query("page")) || 1, 1);
+    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 8, 1), 50);
+    const skip = (page - 1) * limit;
+    const filter = search ? { $text: { $search: search } } : {};
+    const totalRecipes = await Recipe.countDocuments(filter);
+    const recipes: IRecipeSchema[] = await Recipe.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort(search ? { score: { $meta: "textScore" }, createdAt: -1 } : { createdAt: -1 })
         .select("-__v");
 
-    if (recipes.length === 0 || recipes === null || 0) {
-        return c.json(
-            {
-                status: false,
-                message: "Recipes not found! Try creating new recipe",
-            },
-            404,
-        );
-    }
-
-    return c.json({ status: true, data: recipes });
+    return c.json({
+        status: true,
+        data: recipes,
+        pagination: {
+            page,
+            limit,
+            totalRecipes,
+            totalPages: Math.ceil(totalRecipes / limit),
+            search,
+        },
+    });
 };
 
 export const getRecipe = async (c: Context) => {
@@ -441,6 +657,10 @@ export const updateRecipe = async (c: Context) => {
 
 export const getUserRecipes = async (c: Context) => {
     const userId = c.req.param("id");
+    const search = c.req.query("search")?.trim() || "";
+    const page = Math.max(Number(c.req.query("page")) || 1, 1);
+    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 8, 1), 50);
+    const skip = (page - 1) * limit;
 
     if (!isValidObjectId(userId) || !userId) {
         return c.json(
@@ -464,20 +684,29 @@ export const getUserRecipes = async (c: Context) => {
             404,
         );
 
-    const recipes: IRecipeSchema[] = await Recipe.find({ user: userId }).sort({
-        createdAt: -1,
-    });
-
-    if (recipes.length === 0) {
-        return c.json({
-            status: true,
-            data: { numberOfRecipes: 0, recipes: [], user },
-        });
-    }
+    const filter = search
+        ? { user: userId, $text: { $search: search } }
+        : { user: userId };
+    const totalRecipes = await Recipe.countDocuments(filter);
+    const recipes: IRecipeSchema[] = await Recipe.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort(search ? { score: { $meta: "textScore" }, createdAt: -1 } : { createdAt: -1 });
 
     return c.json({
         status: true,
-        data: { numberOfRecipes: recipes.length, recipes, user },
+        data: {
+            numberOfRecipes: totalRecipes,
+            recipes,
+            user,
+            pagination: {
+                page,
+                limit,
+                totalRecipes,
+                totalPages: Math.ceil(totalRecipes / limit),
+                search,
+            },
+        },
     });
 };
 

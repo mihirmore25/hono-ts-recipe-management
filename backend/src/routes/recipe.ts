@@ -7,11 +7,14 @@ import {
     getRecipe,
     getRecipes,
     getUserRecipes,
-    likeRecipe
+    likeRecipe,
+    bulkCreateRecipes,
 } from "../controllers/recipe";
+import { isAdmin } from "../middleware/isAdmin";
 const recipeRoutes = new Hono();
 
 recipeRoutes.post("/", verify, createRecipe);
+recipeRoutes.post("/bulk", verify, isAdmin, bulkCreateRecipes);
 recipeRoutes.get("/", verify, getRecipes);
 recipeRoutes.get("/user/:id", verify, getUserRecipes);
 recipeRoutes.get("/:id", verify, getRecipe);

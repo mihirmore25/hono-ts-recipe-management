@@ -40,7 +40,8 @@ export const authApi = {
 };
 
 export const recipeApi = {
-    list: () => api.get("/recipes"),
+    list: (page = 1, limit = 8, search = "") =>
+        api.get("/recipes", { params: { page, limit, search } }),
     get: (id: string) => api.get(`/recipes/${id}`),
     create: (formData: FormData) =>
         api.post("/recipes", formData, {
@@ -51,7 +52,8 @@ export const recipeApi = {
             headers: { "Content-Type": "multipart/form-data" },
         }),
     remove: (id: string) => api.delete(`/recipes/${id}`),
-    userRecipes: (id: string) => api.get(`/recipes/user/${id}`),
+    userRecipes: (id: string, page = 1, limit = 8, search = "") =>
+        api.get(`/recipes/user/${id}`, { params: { page, limit, search } }),
     like: (id: string) => api.post<LikeRecipeResponse>(`/recipes/${id}/like`),
 };
 
