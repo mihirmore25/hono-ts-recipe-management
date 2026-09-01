@@ -1,4 +1,12 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import {
+    BrowserRouter,
+    Navigate,
+    Route,
+    Routes,
+    useNavigationType,
+    useLocation,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Navbar } from "./components/layout/Navbar";
 import { HomePage } from "./components/pages/HomePage";
@@ -23,9 +31,38 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
+const ScrollToTop = () => {
+    const location = useLocation();
+    const navigationType = useNavigationType();
+    const positions = useRef(new Map<string, number>());
+
+    useEffect(() => {
+        const previousRestoration = window.history.scrollRestoration;
+        window.history.scrollRestoration = "manual";
+
+        return () => {
+            window.history.scrollRestoration = previousRestoration;
+        };
+    }, []);
+
+    useLayoutEffect(() => {
+        const savedPosition = positions.current.get(location.key) ?? 0;
+        const position = navigationType === "POP" ? savedPosition : 0;
+
+        window.scrollTo({ top: position, left: 0, behavior: "auto" });
+
+        return () => {
+            positions.current.set(location.key, window.scrollY);
+        };
+    }, [location.key, navigationType]);
+
+    return null;
+};
+
 const AppRoutes = () => {
     return (
         <BrowserRouter>
+            <ScrollToTop />
             <Navbar />
             <Routes>
                 <Route path="/" element={<HomePage />} />

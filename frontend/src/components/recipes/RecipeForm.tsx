@@ -403,7 +403,7 @@ export const RecipeForm = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
-            <div className="mx-auto max-w-4xl rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8 lg:p-10">
+            <div className="mx-auto max-w-7xl rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8 lg:p-10">
                 <div className="mb-6">
                     <RecipePageNavigation />
                 </div>

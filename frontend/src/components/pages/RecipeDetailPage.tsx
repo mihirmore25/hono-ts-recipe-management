@@ -10,6 +10,8 @@ import {
     Trash2,
     UserCircle2,
     X,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 import { recipeApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
@@ -71,6 +73,8 @@ export const RecipeDetailPage = () => {
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [showImagePreview, setShowImagePreview] = useState(false);
     const [loadError, setLoadError] = useState("");
+    const [showAllIngredients, setShowAllIngredients] = useState(false);
+    const [showAllInstructions, setShowAllInstructions] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -142,10 +146,10 @@ export const RecipeDetailPage = () => {
     if (loading)
         return (
             <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
-                <div className="mx-auto mb-4 max-w-6xl">
+                <div className="mx-auto mb-4 max-w-7xl">
                     <div className="h-6 w-48 animate-pulse rounded bg-slate-100" />
                 </div>
-                <div className="mx-auto max-w-6xl overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem]">
+                <div className="mx-auto max-w-7xl overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem]">
                     <div className="h-72 w-full bg-slate-100 animate-pulse" />
                     <div className="p-5 sm:p-8 lg:p-10">
                         <div className="mb-3 h-6 w-3/5 animate-pulse rounded bg-slate-100" />
@@ -186,13 +190,21 @@ export const RecipeDetailPage = () => {
         );
 
     const canManage = user?._id === recipe.user || user?.role === "admin";
+    const ingredients = displayRecipeList(recipe.ingredients, "ingredient");
+    const instructions = displayRecipeList(recipe.instructions, "instruction");
+    const visibleIngredients = showAllIngredients
+        ? ingredients
+        : ingredients.slice(0, 10);
+    const visibleInstructions = showAllInstructions
+        ? instructions
+        : instructions.slice(0, 5);
 
     return (
         <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
-            <div className="mx-auto mb-4 max-w-6xl">
+            <div className="mx-auto mb-4 max-w-7xl">
                 <RecipePageNavigation />
             </div>
-            <div className="mx-auto max-w-6xl relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem]">
+            <div className="mx-auto max-w-7xl relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem]">
                 <FloatingFoodIcons
                     className="z-10"
                     mobileCount={10}
@@ -275,21 +287,24 @@ export const RecipeDetailPage = () => {
 
                         <div className="mt-8 grid gap-3 rounded-[1.25rem] bg-slate-50 p-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:p-5">
                             <div className="flex items-center gap-2 text-slate-700">
-                                <Clock3 size={16} />{" "}
+                                <Clock3 className="text-amber-500" size={16} />{" "}
                                 {formatDuration(recipe.totalTime)} total
                             </div>
                             <div className="flex items-center gap-2 text-slate-700">
-                                <Clock3 size={16} />{" "}
+                                <Clock3 className="text-blue-500" size={16} />{" "}
                                 {formatDuration(recipe.prepTime)} prep
                             </div>
                             <div className="flex items-center gap-2 text-slate-700">
-                                <Flame size={16} /> {recipe.calories} kcal
+                                <Flame className="text-orange-500" size={16} />{" "}
+                                {recipe.calories} kcal
                             </div>
                             <div className="flex items-center gap-2 text-slate-700">
-                                <Wheat size={16} /> {recipe.carbs}g carbs
+                                <Wheat className="text-yellow-600" size={16} />{" "}
+                                {recipe.carbs}g carbs
                             </div>
                             <div className="flex items-center gap-2 text-slate-700">
-                                <Dumbbell size={16} /> {recipe.protein}g protein
+                                <Dumbbell className="text-violet-500" size={16} />{" "}
+                                {recipe.protein}g protein
                             </div>
                             <button
                                 type="button"
@@ -300,9 +315,7 @@ export const RecipeDetailPage = () => {
                             >
                                 <Heart
                                     size={16}
-                                    className={
-                                        liked ? "fill-red-500 text-red-500" : ""
-                                    }
+                                    className={liked ? "fill-rose-500 text-rose-500" : "text-rose-400"}
                                 />
                                 {liking
                                     ? "Updating…"
@@ -316,11 +329,7 @@ export const RecipeDetailPage = () => {
                                     Ingredients
                                 </h2>
                                 <ul className="mt-4 flex flex-wrap gap-3 text-slate-600">
-                                    {displayRecipeList(
-                                        recipe.ingredients,
-                                        "ingredient",
-                                    )
-                                        .map((item, i) => (
+                                    {visibleIngredients.map((item, i) => (
                                             <li
                                                 key={i}
                                                 className="w-fit max-w-full rounded-2xl bg-slate-50 px-4 py-3 break-words"
@@ -329,17 +338,40 @@ export const RecipeDetailPage = () => {
                                             </li>
                                         ))}
                                 </ul>
+                                {ingredients.length > 10 ? (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowAllIngredients(
+                                                (current) => !current,
+                                            )
+                                        }
+                                        aria-label={
+                                            showAllIngredients
+                                                ? "Show fewer ingredients"
+                                                : "Show more ingredients"
+                                        }
+                                        title={
+                                            showAllIngredients
+                                                ? "Show less"
+                                                : "Show more"
+                                        }
+                                        className="mt-4 inline-flex h-10 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+                                    >
+                                        {showAllIngredients ? (
+                                            <ChevronUp size={20} />
+                                        ) : (
+                                            <ChevronDown size={20} />
+                                        )}
+                                    </button>
+                                ) : null}
                             </div>
                             <div>
                                 <h2 className="text-xl font-semibold text-slate-900">
                                     Instructions
                                 </h2>
                                 <ol className="mt-4 space-y-3 text-slate-600">
-                                    {displayRecipeList(
-                                        recipe.instructions,
-                                        "instruction",
-                                    )
-                                        .map((item, i) => (
+                                    {visibleInstructions.map((item, i) => (
                                             <li
                                                 key={i}
                                                 className="rounded-2xl bg-slate-50 px-4 py-3"
@@ -348,6 +380,33 @@ export const RecipeDetailPage = () => {
                                             </li>
                                         ))}
                                 </ol>
+                                {instructions.length > 5 ? (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowAllInstructions(
+                                                (current) => !current,
+                                            )
+                                        }
+                                        aria-label={
+                                            showAllInstructions
+                                                ? "Show fewer instructions"
+                                                : "Show more instructions"
+                                        }
+                                        title={
+                                            showAllInstructions
+                                                ? "Show less"
+                                                : "Show more"
+                                        }
+                                        className="mt-4 inline-flex h-10 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+                                    >
+                                        {showAllInstructions ? (
+                                            <ChevronUp size={20} />
+                                        ) : (
+                                            <ChevronDown size={20} />
+                                        )}
+                                    </button>
+                                ) : null}
                             </div>
                         </div>
                     </div>

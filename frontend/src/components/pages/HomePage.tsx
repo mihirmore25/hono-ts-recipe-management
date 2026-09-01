@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Clock3, Flame, Heart, Search, Sparkles, Wheat, Dumbbell } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { recipeApi } from "../../utils/api";
@@ -15,10 +15,27 @@ export const HomePage = () => {
     const [likedRecipeIds, setLikedRecipeIds] = useState<Record<string, boolean>>({});
     const [likingRecipeIds, setLikingRecipeIds] = useState<Record<string, boolean>>({});
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-    const [page, setPage] = useState(1);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pageFromUrl = Math.max(Number(searchParams.get("page")) || 1, 1);
+    const [page, setPage] = useState(pageFromUrl);
     const [totalPages, setTotalPages] = useState(1);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
+
+    useEffect(() => {
+        setPage(pageFromUrl);
+    }, [pageFromUrl]);
+
+    const changePage = (nextPage: number) => {
+        setPage(nextPage);
+        setSearchParams(
+            (currentParams) => {
+                currentParams.set("page", String(nextPage));
+                return currentParams;
+            },
+            { replace: false },
+        );
+    };
 
     const handleLike = async (recipeId?: string) => {
         if (!recipeId || likedRecipeIds[recipeId] || likingRecipeIds[recipeId]) {
@@ -69,13 +86,23 @@ export const HomePage = () => {
     }, [page, search]);
 
     useEffect(() => {
+        const nextSearch = searchInput.trim();
+        if (nextSearch === search) return;
+
         const timeoutId = window.setTimeout(() => {
             setPage(1);
-            setSearch(searchInput.trim());
+            setSearch(nextSearch);
+            setSearchParams(
+                (currentParams) => {
+                    currentParams.set("page", "1");
+                    return currentParams;
+                },
+                { replace: true },
+            );
         }, 1000);
 
         return () => window.clearTimeout(timeoutId);
-    }, [searchInput]);
+    }, [searchInput, search, setSearchParams]);
 
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_55%)] px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
@@ -191,16 +218,16 @@ export const HomePage = () => {
                                             </p>
                                             <div className="flex flex-wrap gap-3 text-sm text-slate-500">
                                                 <span className="flex items-center gap-1">
-                                                    <Clock3 size={14} /> {formatDuration(recipe.totalTime)}
+                                                    <Clock3 className="text-amber-500" size={14} /> {formatDuration(recipe.totalTime)}
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <Flame size={14} /> {recipe.calories} kcal
+                                                    <Flame className="text-orange-500" size={14} /> {recipe.calories} kcal
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <Wheat size={14} /> {recipe.carbs}g carbs
+                                                    <Wheat className="text-yellow-600" size={14} /> {recipe.carbs}g carbs
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <Dumbbell size={14} /> {recipe.protein}g protein
+                                                    <Dumbbell className="text-violet-500" size={14} /> {recipe.protein}g protein
                                                 </span>
                                             </div>
                                         </div>
@@ -216,7 +243,7 @@ export const HomePage = () => {
                                     >
                                         <Heart
                                             size={16}
-                                            className={likedRecipeIds[recipe._id ?? ""] ? "fill-red-500 text-red-500" : "text-slate-600"}
+                                            className={likedRecipeIds[recipe._id ?? ""] ? "fill-rose-500 text-rose-500" : "text-rose-400"}
                                         />
                                         <span className="text-slate-700">
                                             {likingRecipeIds[recipe._id ?? ""] ? "…" : recipe.likes ?? 0}
@@ -229,7 +256,7 @@ export const HomePage = () => {
                     <RecipePagination
                         page={page}
                         totalPages={totalPages}
-                        onPageChange={setPage}
+                        onPageChange={changePage}
                     />
                 </section>
             </div>

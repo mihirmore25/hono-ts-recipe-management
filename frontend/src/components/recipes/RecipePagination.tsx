@@ -1,3 +1,5 @@
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
+
 interface RecipePaginationProps {
     page: number;
     totalPages: number;
@@ -19,9 +21,9 @@ export const RecipePagination = ({
                 title="First page"
                 disabled={page === 1}
                 onClick={() => onPageChange(1)}
-                className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                &lt;&lt;
+                <ChevronsLeft size={18} aria-hidden="true" />
             </button>
             <button
                 type="button"
@@ -48,9 +50,9 @@ export const RecipePagination = ({
                 title="Last page"
                 disabled={page === totalPages}
                 onClick={() => onPageChange(totalPages)}
-                className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                &gt;&gt;
+                <ChevronsRight size={18} aria-hidden="true" />
             </button>
         </div>
     );

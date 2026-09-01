@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Clock3, Dumbbell, Flame, Pencil, Search, UserCircle2, Wheat } from "lucide-react";
 import { recipeApi, userApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
@@ -22,12 +22,29 @@ export const ProfilePage = () => {
     const [editing, setEditing] = useState(false);
     const [username, setUsername] = useState("");
     const [image, setImage] = useState<File | null>(null);
-    const [page, setPage] = useState(1);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pageFromUrl = Math.max(Number(searchParams.get("page")) || 1, 1);
+    const [page, setPage] = useState(pageFromUrl);
     const [totalPages, setTotalPages] = useState(1);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [saving, setSaving] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setPage(pageFromUrl);
+    }, [pageFromUrl]);
+
+    const changePage = (nextPage: number) => {
+        setPage(nextPage);
+        setSearchParams(
+            (currentParams) => {
+                currentParams.set("page", String(nextPage));
+                return currentParams;
+            },
+            { replace: false },
+        );
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -63,13 +80,23 @@ export const ProfilePage = () => {
     }, [id, page, search]);
 
     useEffect(() => {
+        const nextSearch = searchInput.trim();
+        if (nextSearch === search) return;
+
         const timeoutId = window.setTimeout(() => {
             setPage(1);
-            setSearch(searchInput.trim());
+            setSearch(nextSearch);
+            setSearchParams(
+                (currentParams) => {
+                    currentParams.set("page", "1");
+                    return currentParams;
+                },
+                { replace: true },
+            );
         }, 1000);
 
         return () => window.clearTimeout(timeoutId);
-    }, [searchInput]);
+    }, [searchInput, search, setSearchParams]);
 
     const canEdit =
         Boolean(id) &&
@@ -112,7 +139,7 @@ export const ProfilePage = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-50 px-3 py-8 sm:px-6 sm:py-12 lg:px-8">
-                <div className="mx-auto max-w-6xl animate-pulse rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:rounded-[2rem] sm:p-10">
+                <div className="mx-auto max-w-7xl animate-pulse rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:rounded-[2rem] sm:p-10">
                     <div className="h-8 w-56 rounded bg-slate-100" />
                     <div className="mt-3 h-4 w-32 rounded bg-slate-100" />
                     <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -137,7 +164,7 @@ export const ProfilePage = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-7xl">
                 <section className="mb-8 rounded-[1.5rem] border border-amber-100 bg-white p-6 shadow-sm sm:rounded-[2rem] sm:p-10">
                     <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                         {profile.user.profileImage?.imageUrl ? (
@@ -236,10 +263,10 @@ export const ProfilePage = () => {
                                     <h2 className="text-lg font-semibold text-slate-900">{recipe.title}</h2>
                                     <p className="mb-4 mt-2 line-clamp-3 text-sm text-slate-600">{recipe.description}</p>
                                     <div className="flex flex-wrap gap-3 text-sm text-slate-500">
-                                        <span className="flex items-center gap-1"><Clock3 size={14} /> {formatDuration(recipe.totalTime)}</span>
-                                        <span className="flex items-center gap-1"><Flame size={14} /> {recipe.calories} kcal</span>
-                                        <span className="flex items-center gap-1"><Wheat size={14} /> {recipe.carbs}g carbs</span>
-                                        <span className="flex items-center gap-1"><Dumbbell size={14} /> {recipe.protein}g protein</span>
+                                        <span className="flex items-center gap-1"><Clock3 className="text-amber-500" size={14} /> {formatDuration(recipe.totalTime)}</span>
+                                        <span className="flex items-center gap-1"><Flame className="text-orange-500" size={14} /> {recipe.calories} kcal</span>
+                                        <span className="flex items-center gap-1"><Wheat className="text-yellow-600" size={14} /> {recipe.carbs}g carbs</span>
+                                        <span className="flex items-center gap-1"><Dumbbell className="text-violet-500" size={14} /> {recipe.protein}g protein</span>
                                     </div>
                                 </div>
                             </Link>
@@ -249,7 +276,7 @@ export const ProfilePage = () => {
                 <RecipePagination
                     page={page}
                     totalPages={totalPages}
-                    onPageChange={setPage}
+                    onPageChange={changePage}
                 />
             </div>
         </div>

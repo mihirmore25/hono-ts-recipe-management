@@ -75,7 +75,7 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
 
     return (
         <div className="min-h-screen bg-slate-50 px-3 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-            <div className="mx-auto flex max-w-5xl flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem] lg:flex-row">
+            <div className="mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem] lg:flex-row">
                 <div className="flex-1 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.3),_transparent_55%)] p-6 sm:p-8 lg:p-12">
                     <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">
                         {mode === "forgot"
