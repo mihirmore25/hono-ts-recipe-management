@@ -114,7 +114,6 @@ const logout = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const token = (0, cookie_1.getCookie)(c, "access_token");
     // const user_data = await verify(token, process.env.JWT_SECRET!);
     // const user: IUserSchema | null = await User.findById(user_data.id);
-    // console.log("Logout User --> ", user);
     const deletedCookie = (0, cookie_1.deleteCookie)(c, "access_token", {
         sameSite: "none",
         secure: true,
@@ -150,10 +149,8 @@ const forgotPassword = (c) => __awaiter(void 0, void 0, void 0, function* () {
         user.resetPasswordToken = token;
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
         yield user.save();
-        console.log("After: ", user);
         // Send Reset Password Email
         const response = yield (0, mailer_1.sendResetPasswordEmail)(user.email, token);
-        console.log("Response: ", response);
         if (response) {
             return c.json({
                 message: "Reset password email sent successfully!",
@@ -199,7 +196,6 @@ const resetPassword = (c) => __awaiter(void 0, void 0, void 0, function* () {
             new: true,
             save: true,
         }).select("-__v");
-        console.log("updated user password after: ", updatedUserPassword);
         let newToken = yield user.generateJWT();
         (0, cookie_1.setCookie)(c, "access_token", newToken, {
             maxAge: 30 * 60 * 1000, // would expire in 30 minutes

@@ -131,7 +131,6 @@ export const logout = async (c: Context) => {
     // const user_data = await verify(token, process.env.JWT_SECRET!);
 
     // const user: IUserSchema | null = await User.findById(user_data.id);
-    // console.log("Logout User --> ", user);
 
     const deletedCookie = deleteCookie(c, "access_token", {
         sameSite: "none",
@@ -181,12 +180,8 @@ export const forgotPassword = async (c: Context) => {
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
 
         await user.save();
-        console.log("After: ", user);
-
         // Send Reset Password Email
         const response = await sendResetPasswordEmail(user.email, token);
-
-        console.log("Response: ", response);
 
         if (response) {
             return c.json({
@@ -248,7 +243,6 @@ export const resetPassword = async (c: Context) => {
             }
         ).select("-__v");
 
-        console.log("updated user password after: ", updatedUserPassword);
 
         let newToken = await user.generateJWT();
 

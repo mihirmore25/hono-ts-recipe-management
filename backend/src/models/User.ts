@@ -93,7 +93,7 @@ userSchema.pre("save", async function (next: () => void) {
         this.password = await bcrypt.hash(this.password, salt);
         next();
     } catch (error) {
-        console.log(error);
+        console.error("Password hashing failed:", error);
         next(); // Pass error to Mongoose
     }
 });

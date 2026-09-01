@@ -112,6 +112,7 @@ export const RecipeForm = () => {
         Set<NumericRecipeField>
     >(() => new Set());
     const [error, setError] = useState("");
+    const [saving, setSaving] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [aiIdea, setAiIdea] = useState("");
     const [generating, setGenerating] = useState(false);
@@ -322,6 +323,7 @@ export const RecipeForm = () => {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (saving) return;
         if (!isAuthenticated || !localStorage.getItem("token")) {
             setError("Please log in again before creating a recipe.");
             navigate("/login");
@@ -378,6 +380,7 @@ export const RecipeForm = () => {
         if (file) formData.append("image", file);
 
         try {
+            setSaving(true);
             if (id) {
                 await recipeApi.update(id, formData);
             } else {
@@ -393,6 +396,8 @@ export const RecipeForm = () => {
             setTimeout(() => navigate("/"), 900);
         } catch (err: any) {
             setError(err?.response?.data?.message || "Unable to save recipe");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -853,9 +858,19 @@ export const RecipeForm = () => {
                     <div className="relative inline-block">
                         <button
                             type="submit"
-                            className="w-full rounded-full bg-amber-500 px-6 py-3 font-semibold text-white transition hover:bg-amber-600 sm:w-auto"
+                            disabled={saving}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-6 py-3 font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
                         >
-                            Save recipe
+                            {saving ? (
+                                <>
+                                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+                                    {id ? "Updating recipe..." : "Saving recipe..."}
+                                </>
+                            ) : id ? (
+                                "Update recipe"
+                            ) : (
+                                "Save recipe"
+                            )}
                         </button>
                         {showConfetti ? (
                             <FoodConfetti

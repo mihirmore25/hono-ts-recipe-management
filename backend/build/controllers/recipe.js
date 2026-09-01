@@ -233,7 +233,6 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         for (const [key, value] of formBody.entries()) {
             reqBody[key] = value;
         }
-        // console.log(reqBody);
         const { title, description, totalTime, prepTime, cookingTime, ingredients, instructions, calories, carbs, protein, fat, } = reqBody;
         const numericFields = {
             totalTime,
@@ -289,7 +288,6 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         const byteArrayBuffer = yield image.arrayBuffer();
         const base64 = (0, encode_1.encodeBase64)(byteArrayBuffer);
         const recipeImage = yield cloudinary_1.v2.uploader.upload(`data:image/png;base64,${base64}`, { resource_type: "auto", folder: "hono_uploads" });
-        console.log("file is uploaded on cloudinary ", recipeImage.url);
         // return c.json(recipeImage);
         const newRecipe = yield Recipe_1.Recipe.create({
             recipeImage: {
@@ -310,7 +308,6 @@ const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
             user: user._id,
         });
         const newCreatedRecipe = yield newRecipe.save();
-        // console.log(newCreatedRecipe.toObject());
         return c.json({
             status: true,
             data: [newCreatedRecipe.toObject()],
@@ -395,9 +392,7 @@ const deleteRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         if (user._id.toString() === recipe.user.toString() ||
             user.role === "admin") {
             const deletedRecipe = yield Recipe_1.Recipe.findByIdAndDelete(recipeId).select("-__v -createdAt -updatedAt");
-            console.log("Deleted Recipe --> ", deletedRecipe);
-            const deleteImageFromCloudinary = yield cloudinary_1.v2.uploader.destroy(recipe.recipeImage.publicId);
-            console.log(deleteImageFromCloudinary);
+            yield cloudinary_1.v2.uploader.destroy(recipe.recipeImage.publicId);
             return c.json({
                 status: true,
                 data: deletedRecipe,
@@ -422,7 +417,6 @@ const updateRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
         for (const [key, value] of formBody.entries()) {
             reqBody[key] = value;
         }
-        // console.log(reqBody);
         const { title, description, totalTime, prepTime, cookingTime, ingredients, instructions, calories, carbs, protein, fat, } = reqBody;
         const numericFields = {
             totalTime,
@@ -477,10 +471,7 @@ const updateRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
                 const byteArrayBuffer = yield image.arrayBuffer();
                 const base64 = (0, encode_1.encodeBase64)(byteArrayBuffer);
                 const recipeImage = yield cloudinary_1.v2.uploader.upload(`data:image/png;base64,${base64}`, { resource_type: "auto", folder: "hono_uploads" });
-                console.log("file is uploaded on cloudinary ", recipeImage.url);
-                console.log(recipe.recipeImage);
                 const deleteImageFromCloudinary = yield cloudinary_1.v2.uploader.destroy(recipe.recipeImage.publicId);
-                console.log(deleteImageFromCloudinary);
                 // Update recipeImage only if new image is provided
                 recipe.recipeImage = {
                     publicId: recipeImage.public_id || recipe.recipeImage.publicId,
@@ -503,7 +494,6 @@ const updateRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
                     fat,
                 },
             }, { new: true }).select("-__V");
-            console.log("Updated Recipe --> ", updatedRecipe);
             return c.json({
                 status: true,
                 data: updatedRecipe,
@@ -570,9 +560,7 @@ const likeRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const user_data = c.get("user");
         const userId = user_data._id;
-        // console.log("User Id: ", userId);
         const recipeId = c.req.param("id");
-        // console.log("Recipe Id: ", recipeId);
         // Validate Recipe Id format
         if (!recipeId || !(0, mongoose_1.isValidObjectId)(recipeId)) {
             return c.json({

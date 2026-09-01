@@ -12,6 +12,7 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
     const [form, setForm] = useState({ username: "", email: "", password: "" });
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
     const params = useParams();
     const resetToken = token ?? params.token;
@@ -21,6 +22,7 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
         event.preventDefault();
         setMessage("");
         setError("");
+        setSubmitting(true);
 
         try {
             if (mode === "register") {
@@ -66,6 +68,8 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                     err?.response?.data?.error ||
                     "Something went wrong",
             );
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -167,15 +171,30 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                     ) : null}
                     <button
                         type="submit"
-                        className="w-full rounded-full bg-amber-500 px-4 py-3 font-semibold text-white transition hover:bg-amber-600"
+                        disabled={submitting}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-4 py-3 font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                        {mode === "forgot"
-                            ? "Send reset link"
-                            : mode === "reset"
-                              ? "Save password"
-                              : mode === "register"
-                                ? "Create account"
-                                : "Log in"}
+                        {submitting ? (
+                            <>
+                                <span
+                                    className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                                    aria-hidden="true"
+                                />
+                                <span>
+                                    {mode === "register"
+                                        ? "Creating account..."
+                                        : "Logging in..."}
+                                </span>
+                            </>
+                        ) : mode === "forgot" ? (
+                            "Send reset link"
+                        ) : mode === "reset" ? (
+                            "Save password"
+                        ) : mode === "register" ? (
+                            "Create account"
+                        ) : (
+                            "Log in"
+                        )}
                     </button>
                     <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                         {mode !== "login" ? (

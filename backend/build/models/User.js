@@ -83,7 +83,7 @@ userSchema.pre("save", function (next) {
             next();
         }
         catch (error) {
-            console.log(error);
+            console.error("Password hashing failed:", error);
             next(); // Pass error to Mongoose
         }
     });

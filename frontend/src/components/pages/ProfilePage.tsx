@@ -185,9 +185,16 @@ export const ProfilePage = () => {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="rounded-full bg-amber-500 px-5 py-3 font-medium text-white hover:bg-amber-600 disabled:opacity-60"
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-500 px-5 py-3 font-medium text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {saving ? "Saving..." : "Save"}
+                                {saving ? (
+                                    <>
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    "Save profile"
+                                )}
                             </button>
                         </form>
                     ) : null}

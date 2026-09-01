@@ -257,7 +257,6 @@ export const createRecipe = async (c: Context) => {
             reqBody[key] = value;
         }
 
-        // console.log(reqBody);
         const {
             title,
             description,
@@ -351,7 +350,6 @@ export const createRecipe = async (c: Context) => {
             { resource_type: "auto", folder: "hono_uploads" },
         );
 
-        console.log("file is uploaded on cloudinary ", recipeImage.url);
         // return c.json(recipeImage);
 
         const newRecipe: IRecipeSchema = await Recipe.create({
@@ -375,7 +373,6 @@ export const createRecipe = async (c: Context) => {
 
         const newCreatedRecipe = await newRecipe.save();
 
-        // console.log(newCreatedRecipe.toObject());
 
         return c.json({
             status: true,
@@ -492,12 +489,10 @@ export const deleteRecipe = async (c: Context) => {
                     "-__v -createdAt -updatedAt",
                 );
 
-            console.log("Deleted Recipe --> ", deletedRecipe);
 
-            const deleteImageFromCloudinary = await cloudinary.uploader.destroy(
+            await cloudinary.uploader.destroy(
                 recipe.recipeImage.publicId,
             );
-            console.log(deleteImageFromCloudinary);
 
             return c.json(
                 {
@@ -529,7 +524,6 @@ export const updateRecipe = async (c: Context) => {
             reqBody[key] = value;
         }
 
-        // console.log(reqBody);
         const {
             title,
             description,
@@ -630,15 +624,11 @@ export const updateRecipe = async (c: Context) => {
                     { resource_type: "auto", folder: "hono_uploads" },
                 );
 
-                console.log("file is uploaded on cloudinary ", recipeImage.url);
-
-                console.log(recipe.recipeImage);
 
                 const deleteImageFromCloudinary =
                     await cloudinary.uploader.destroy(
                         recipe.recipeImage.publicId,
                     );
-                console.log(deleteImageFromCloudinary);
 
                 // Update recipeImage only if new image is provided
                 recipe.recipeImage = {
@@ -670,7 +660,6 @@ export const updateRecipe = async (c: Context) => {
                     { new: true },
                 ).select("-__V");
 
-            console.log("Updated Recipe --> ", updatedRecipe);
 
             return c.json(
                 {
@@ -750,10 +739,8 @@ export const likeRecipe = async (c: Context) => {
     try {
         const user_data = c.get("user");
         const userId = user_data._id;
-        // console.log("User Id: ", userId);
 
         const recipeId = c.req.param("id");
-        // console.log("Recipe Id: ", recipeId);
 
         // Validate Recipe Id format
         if (!recipeId || !isValidObjectId(recipeId)) {
