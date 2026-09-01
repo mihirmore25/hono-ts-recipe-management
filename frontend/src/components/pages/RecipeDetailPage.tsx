@@ -252,6 +252,9 @@ export const RecipeDetailPage = () => {
                                                 src={recipe.user.profileImage.imageUrl}
                                                 alt=""
                                                 className="h-5 w-5 rounded-full object-cover"
+                                                onError={(event) => {
+                                                    event.currentTarget.style.display = "none";
+                                                }}
                                             />
                                         ) : (
                                             <UserCircle2 size={16} />

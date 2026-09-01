@@ -7,6 +7,8 @@ interface IUserSchema extends Document {
     username: string;
     email: string;
     password: string;
+    googleId?: string;
+    authProvider?: "local" | "google";
     role: string;
     profileImage?: {
         publicId?: string;
@@ -42,9 +44,17 @@ const userSchema = new Schema<IUserSchema>(
         },
         password: {
             type: String,
-            required: [true, "Your password is required"],
+            required: function (this: IUserSchema) {
+                return this.authProvider !== "google";
+            },
             select: false,
             max: 25,
+        },
+        googleId: { type: String, unique: true, sparse: true },
+        authProvider: {
+            type: String,
+            enum: ["local", "google"],
+            default: "local",
         },
         role: {
             type: String,

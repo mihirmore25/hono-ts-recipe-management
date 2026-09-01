@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { authApi } from "../../utils/api";
+import { authApi, userApi } from "../../utils/api";
 
 interface AuthFormProps {
     mode: "login" | "register" | "forgot" | "reset";
@@ -14,9 +14,41 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
     const params = useParams();
     const resetToken = token ?? params.token;
     const { login } = useAuth();
+    const apiBaseUrl =
+        import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
+
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        const googleToken = query.get("auth_token");
+
+        if (googleToken && mode === "login") {
+            setSubmitting(true);
+            localStorage.setItem("token", googleToken);
+            userApi
+                .getProfile()
+                .then((response) => {
+                    const profile = response.data?.data;
+                    if (!profile) throw new Error("Google profile was not returned.");
+                    login(profile, googleToken);
+                    navigate("/", { replace: true });
+                })
+                .catch(() => {
+                    localStorage.removeItem("token");
+                    setError("Google sign-in failed. Please try again.");
+                    navigate("/login", { replace: true });
+                })
+                .finally(() => setSubmitting(false));
+            return;
+        }
+
+        if (query.get("error") === "google_auth_failed") {
+            setError("Google sign-in failed. Please try again.");
+        }
+    }, [location.search, login, mode, navigate]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -196,6 +228,47 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                             "Log in"
                         )}
                     </button>
+                    {(mode === "login" || mode === "register") ? (
+                        <>
+                            <div className="flex items-center gap-3 text-xs text-slate-400">
+                                <span className="h-px flex-1 bg-slate-200" />
+                                OR
+                                <span className="h-px flex-1 bg-slate-200" />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    (window.location.href = `${apiBaseUrl}/auth/google`)
+                                }
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill="#4285F4"
+                                        d="M21.35 12.27c0-.73-.07-1.43-.2-2.1H12v3.98h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.2 2.91-7.27Z"
+                                    />
+                                    <path
+                                        fill="#34A853"
+                                        d="M12 21.75c2.63 0 4.84-.87 6.45-2.36l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.55 0-4.71-1.72-5.49-4.03H3.27v2.53A9.74 9.74 0 0 0 12 21.75Z"
+                                    />
+                                    <path
+                                        fill="#FBBC05"
+                                        d="M6.51 13.83A5.85 5.85 0 0 1 6.2 12c0-.64.11-1.26.31-1.83V7.64H3.27A9.74 9.74 0 0 0 2.25 12c0 1.57.38 3.05 1.02 4.36l3.24-2.53Z"
+                                    />
+                                    <path
+                                        fill="#EA4335"
+                                        d="M12 6.14c1.43 0 2.71.49 3.72 1.46l2.79-2.79C16.84 3.25 14.63 2.25 12 2.25a9.74 9.74 0 0 0-8.73 5.39l3.24 2.53c.78-2.31 2.94-4.03 5.49-4.03Z"
+                                    />
+                                </svg>
+                                Continue with Google
+                            </button>
+                        </>
+                    ) : null}
                     <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                         {mode !== "login" ? (
                             <Link

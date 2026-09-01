@@ -6,6 +6,8 @@ const verify_1 = require("../middleware/verify");
 const authRoutes = new hono_1.Hono();
 authRoutes.post("/register", auth_1.register);
 authRoutes.post("/login", auth_1.login);
+authRoutes.get("/google", auth_1.googleLogin);
+authRoutes.get("/google/callback", auth_1.googleCallback);
 authRoutes.post("/logout", verify_1.verify, auth_1.logout);
 authRoutes.post("/forgotPassword", auth_1.forgotPassword);
 authRoutes.post("/resetPassword/:token", auth_1.resetPassword);

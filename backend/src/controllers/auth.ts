@@ -5,6 +5,25 @@ import type { Context } from "hono";
 import { sendResetPasswordEmail } from "../utils/mailer";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { OAuth2Client } from "google-auth-library";
+import { v2 as cloudinary } from "cloudinary";
+
+const normalizeGooglePicture = (picture: string) =>
+    picture.replace(/=s\d+(?:-c)?$/, "=s256-c");
+
+const saveGooglePicture = async (picture?: string) => {
+    if (!picture) return undefined;
+
+    const uploadedImage = await cloudinary.uploader.upload(
+        normalizeGooglePicture(picture),
+        { resource_type: "image", folder: "hono_profile_images" },
+    );
+
+    return {
+        publicId: uploadedImage.public_id,
+        imageUrl: uploadedImage.secure_url || uploadedImage.url,
+    };
+};
 
 export const register = async (c: Context) => {
     const { username, email, password }: IUserSchema = await c.req.json();
@@ -123,6 +142,113 @@ export const login = async (c: Context) => {
         token,
         message: "You have successfully logged in.",
     });
+};
+
+export const googleLogin = async (c: Context) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const secureCookie = clientUrl.startsWith("https://");
+
+    if (!clientId || !clientSecret || !callbackUrl) {
+        return c.json({ status: false, message: "Google login is not configured." }, 503);
+    }
+
+    const state = crypto.randomBytes(32).toString("hex");
+    const oauthClient = new OAuth2Client(clientId, clientSecret, callbackUrl);
+    setCookie(c, "google_oauth_state", state, {
+        maxAge: 10 * 60,
+        httpOnly: true,
+        sameSite: secureCookie ? "None" : "Lax",
+        secure: secureCookie,
+    });
+
+    return c.redirect(
+        oauthClient.generateAuthUrl({
+            access_type: "offline",
+            scope: ["openid", "email", "profile"],
+            state,
+            prompt: "select_account",
+        }),
+    );
+};
+
+export const googleCallback = async (c: Context) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const secureCookie = clientUrl.startsWith("https://");
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const savedState = getCookie(c, "google_oauth_state");
+
+    if (!clientId || !clientSecret || !callbackUrl || !code || !state || state !== savedState) {
+        return c.redirect(`${clientUrl}/login?error=google_auth_failed`);
+    }
+
+    try {
+        const oauthClient = new OAuth2Client(clientId, clientSecret, callbackUrl);
+        const { tokens } = await oauthClient.getToken(code);
+        if (!tokens.id_token) throw new Error("Google did not return an ID token.");
+
+        const ticket = await oauthClient.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: clientId,
+        });
+        const payload = ticket.getPayload();
+        if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+            throw new Error("Google account email is not verified.");
+        }
+
+        let user = await User.findOne({
+            $or: [{ googleId: payload.sub }, { email: payload.email.toLowerCase() }],
+        }).select("+password");
+
+        const googleProfileImage = await saveGooglePicture(payload.picture);
+
+        if (!user) {
+            user = new User({
+                username: payload.name?.trim() || payload.email.split("@")[0],
+                email: payload.email.toLowerCase(),
+                googleId: payload.sub,
+                authProvider: "google",
+                profileImage: googleProfileImage || {},
+            });
+        } else if (!user.googleId) {
+            user.googleId = payload.sub;
+            user.authProvider = "google";
+        }
+
+        if (
+            googleProfileImage &&
+            (!user.profileImage?.imageUrl ||
+                user.profileImage.imageUrl.includes("googleusercontent"))
+        ) {
+            user.profileImage = googleProfileImage;
+        }
+        await user.save();
+
+        const token = await user.generateJWT();
+        const { password: _password, ...userData } = user.toObject();
+        setCookie(c, "access_token", token, {
+            maxAge: 30 * 60,
+            httpOnly: true,
+            sameSite: secureCookie ? "None" : "Lax",
+            secure: secureCookie,
+        });
+        deleteCookie(c, "google_oauth_state", {
+            sameSite: secureCookie ? "None" : "Lax",
+            secure: secureCookie,
+        });
+        return c.redirect(
+            `${clientUrl}/login?auth_token=${encodeURIComponent(token)}`,
+        );
+    } catch (error) {
+        console.error("Google login failed:", error);
+        return c.redirect(`${clientUrl}/login?error=google_auth_failed`);
+    }
 };
 
 export const logout = async (c: Context) => {

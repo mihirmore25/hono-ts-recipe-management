@@ -37,9 +37,17 @@ const userSchema = new mongoose_1.Schema({
     },
     password: {
         type: String,
-        required: [true, "Your password is required"],
+        required: function () {
+            return this.authProvider !== "google";
+        },
         select: false,
         max: 25,
+    },
+    googleId: { type: String, unique: true, sparse: true },
+    authProvider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local",
     },
     role: {
         type: String,

@@ -23,12 +23,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.forgotPassword = exports.logout = exports.login = exports.register = void 0;
+exports.resetPassword = exports.forgotPassword = exports.logout = exports.googleCallback = exports.googleLogin = exports.login = exports.register = void 0;
 const User_1 = require("../models/User");
 const cookie_1 = require("hono/cookie");
 const mailer_1 = require("../utils/mailer");
 const crypto_1 = __importDefault(require("crypto"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const google_auth_library_1 = require("google-auth-library");
+const cloudinary_1 = require("cloudinary");
+const normalizeGooglePicture = (picture) => picture.replace(/=s\d+(?:-c)?$/, "=s256-c");
+const saveGooglePicture = (picture) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!picture)
+        return undefined;
+    const uploadedImage = yield cloudinary_1.v2.uploader.upload(normalizeGooglePicture(picture), { resource_type: "image", folder: "hono_profile_images" });
+    return {
+        publicId: uploadedImage.public_id,
+        imageUrl: uploadedImage.secure_url || uploadedImage.url,
+    };
+});
 const register = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, email, password } = yield c.req.json();
     if (!username || !email || !password) {
@@ -110,6 +122,100 @@ const login = (c) => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 exports.login = login;
+const googleLogin = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const secureCookie = clientUrl.startsWith("https://");
+    if (!clientId || !clientSecret || !callbackUrl) {
+        return c.json({ status: false, message: "Google login is not configured." }, 503);
+    }
+    const state = crypto_1.default.randomBytes(32).toString("hex");
+    const oauthClient = new google_auth_library_1.OAuth2Client(clientId, clientSecret, callbackUrl);
+    (0, cookie_1.setCookie)(c, "google_oauth_state", state, {
+        maxAge: 10 * 60,
+        httpOnly: true,
+        sameSite: secureCookie ? "None" : "Lax",
+        secure: secureCookie,
+    });
+    return c.redirect(oauthClient.generateAuthUrl({
+        access_type: "offline",
+        scope: ["openid", "email", "profile"],
+        state,
+        prompt: "select_account",
+    }));
+});
+exports.googleLogin = googleLogin;
+const googleCallback = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const secureCookie = clientUrl.startsWith("https://");
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const savedState = (0, cookie_1.getCookie)(c, "google_oauth_state");
+    if (!clientId || !clientSecret || !callbackUrl || !code || !state || state !== savedState) {
+        return c.redirect(`${clientUrl}/login?error=google_auth_failed`);
+    }
+    try {
+        const oauthClient = new google_auth_library_1.OAuth2Client(clientId, clientSecret, callbackUrl);
+        const { tokens } = yield oauthClient.getToken(code);
+        if (!tokens.id_token)
+            throw new Error("Google did not return an ID token.");
+        const ticket = yield oauthClient.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: clientId,
+        });
+        const payload = ticket.getPayload();
+        if (!(payload === null || payload === void 0 ? void 0 : payload.sub) || !payload.email || payload.email_verified !== true) {
+            throw new Error("Google account email is not verified.");
+        }
+        let user = yield User_1.User.findOne({
+            $or: [{ googleId: payload.sub }, { email: payload.email.toLowerCase() }],
+        }).select("+password");
+        const googleProfileImage = yield saveGooglePicture(payload.picture);
+        if (!user) {
+            user = new User_1.User({
+                username: ((_a = payload.name) === null || _a === void 0 ? void 0 : _a.trim()) || payload.email.split("@")[0],
+                email: payload.email.toLowerCase(),
+                googleId: payload.sub,
+                authProvider: "google",
+                profileImage: googleProfileImage || {},
+            });
+        }
+        else if (!user.googleId) {
+            user.googleId = payload.sub;
+            user.authProvider = "google";
+        }
+        if (googleProfileImage &&
+            (!((_b = user.profileImage) === null || _b === void 0 ? void 0 : _b.imageUrl) ||
+                user.profileImage.imageUrl.includes("googleusercontent"))) {
+            user.profileImage = googleProfileImage;
+        }
+        yield user.save();
+        const token = yield user.generateJWT();
+        const _c = user.toObject(), { password: _password } = _c, userData = __rest(_c, ["password"]);
+        (0, cookie_1.setCookie)(c, "access_token", token, {
+            maxAge: 30 * 60,
+            httpOnly: true,
+            sameSite: secureCookie ? "None" : "Lax",
+            secure: secureCookie,
+        });
+        (0, cookie_1.deleteCookie)(c, "google_oauth_state", {
+            sameSite: secureCookie ? "None" : "Lax",
+            secure: secureCookie,
+        });
+        return c.redirect(`${clientUrl}/login?auth_token=${encodeURIComponent(token)}`);
+    }
+    catch (error) {
+        console.error("Google login failed:", error);
+        return c.redirect(`${clientUrl}/login?error=google_auth_failed`);
+    }
+});
+exports.googleCallback = googleCallback;
 const logout = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const token = (0, cookie_1.getCookie)(c, "access_token");
     // const user_data = await verify(token, process.env.JWT_SECRET!);

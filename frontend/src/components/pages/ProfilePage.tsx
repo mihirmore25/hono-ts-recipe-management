@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Clock3, Dumbbell, Flame, Pencil, Search, UserCircle2, Wheat } from "lucide-react";
+import { Clock3, Dumbbell, Flame, Pencil, Search, Wheat } from "lucide-react";
 import { recipeApi, userApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe, User } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
 import { RecipePagination } from "../recipes/RecipePagination";
+import { UserAvatar } from "../layout/UserAvatar";
 
 interface UserRecipesResponse {
     numberOfRecipes: number;
@@ -167,17 +168,14 @@ export const ProfilePage = () => {
             <div className="mx-auto max-w-7xl">
                 <section className="mb-8 rounded-[1.5rem] border border-amber-100 bg-white p-6 shadow-sm sm:rounded-[2rem] sm:p-10">
                     <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                        {profile.user.profileImage?.imageUrl ? (
-                            <img
-                                src={profile.user.profileImage.imageUrl}
-                                alt={profile.user.username}
-                                className="h-16 w-16 rounded-full object-cover ring-4 ring-amber-100"
+                        <span className="rounded-full ring-4 ring-amber-100">
+                            <UserAvatar
+                                username={profile.user.username}
+                                imageUrl={profile.user.profileImage?.imageUrl}
+                                sizeClassName="h-16 w-16"
+                                iconSize={32}
                             />
-                        ) : (
-                            <div className="rounded-full bg-amber-100 p-3 text-amber-600">
-                                <UserCircle2 size={32} />
-                            </div>
-                        )}
+                        </span>
                         <div className="min-w-0">
                             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">Profile</p>
                             <h1 className="mt-1 text-3xl font-semibold text-slate-900">{profile.user.username}</h1>

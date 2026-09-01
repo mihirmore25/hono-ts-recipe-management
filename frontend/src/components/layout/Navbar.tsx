@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { FloatingFoodIcons } from "./FloatingFoodIcons";
+import { UserAvatar } from "./UserAvatar";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `rounded-full px-3 py-2.5 text-xs font-medium transition sm:px-4 sm:text-sm ${isActive ? "bg-amber-500 text-white shadow" : "text-slate-700 hover:bg-slate-100"}`;
@@ -91,9 +92,8 @@ export const Navbar = () => {
                                 to={`/profile/${user._id ?? user.id ?? ""}`}
                                 className="ml-1 flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs text-slate-600 transition hover:bg-amber-100 hover:text-amber-700 sm:text-sm"
                             >
-                                {user.profileImage?.imageUrl ? (
-                                    <img src={user.profileImage.imageUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
-                                ) : <UserCircle2 size={16} />} {user.username}
+                                <UserAvatar username={user.username} imageUrl={user.profileImage?.imageUrl} sizeClassName="h-5 w-5" iconSize={16} />{" "}
+                                {user.username}
                             </NavLink>
                         ) : null}
                     </div>
@@ -104,9 +104,7 @@ export const Navbar = () => {
                                 to={`/profile/${user._id ?? user.id ?? ""}`}
                                 className="flex max-w-[9rem] items-center gap-2 truncate rounded-full bg-slate-100 px-3 py-2 text-xs text-slate-600"
                             >
-                                {user.profileImage?.imageUrl ? (
-                                    <img src={user.profileImage.imageUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
-                                ) : <UserCircle2 size={16} />}{" "}
+                                <UserAvatar username={user.username} imageUrl={user.profileImage?.imageUrl} sizeClassName="h-5 w-5" iconSize={16} />{" "}
                                 <span className="truncate">{user.username}</span>
                             </NavLink>
                         ) : null}
