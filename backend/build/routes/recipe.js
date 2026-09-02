@@ -9,7 +9,7 @@ const recipeRoutes = new hono_1.Hono();
 recipeRoutes.post("/ai/generate", verify_1.verify, ai_1.generateRecipe);
 recipeRoutes.post("/", verify_1.verify, recipe_1.createRecipe);
 recipeRoutes.post("/bulk", verify_1.verify, isAdmin_1.isAdmin, recipe_1.bulkCreateRecipes);
-recipeRoutes.get("/", verify_1.verify, recipe_1.getRecipes);
+recipeRoutes.get("/", recipe_1.getRecipes);
 recipeRoutes.get("/user/:id", verify_1.verify, recipe_1.getUserRecipes);
 recipeRoutes.get("/:id", verify_1.verify, recipe_1.getRecipe);
 recipeRoutes.delete("/:id", verify_1.verify, recipe_1.deleteRecipe);

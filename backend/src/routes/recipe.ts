@@ -17,7 +17,7 @@ const recipeRoutes = new Hono();
 recipeRoutes.post("/ai/generate", verify, generateRecipe);
 recipeRoutes.post("/", verify, createRecipe);
 recipeRoutes.post("/bulk", verify, isAdmin, bulkCreateRecipes);
-recipeRoutes.get("/", verify, getRecipes);
+recipeRoutes.get("/", getRecipes);
 recipeRoutes.get("/user/:id", verify, getUserRecipes);
 recipeRoutes.get("/:id", verify, getRecipe);
 recipeRoutes.delete("/:id", verify, deleteRecipe);
