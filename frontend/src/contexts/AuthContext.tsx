@@ -4,6 +4,7 @@ import {
     useEffect,
     useMemo,
     useState,
+    useCallback,
     type ReactNode,
 } from "react";
 import type { User } from "../types";
@@ -56,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loadProfile();
     }, [token]);
 
-    const login = (userData: User, authToken: string) => {
+    const login = useCallback((userData: User, authToken: string) => {
         if (!userData || !authToken) {
             throw new Error("Cannot create a session without user credentials.");
         }
@@ -64,14 +65,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("user", JSON.stringify(userData));
         setToken(authToken);
         setUser(userData);
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setToken(null);
         setUser(null);
-    };
+    }, []);
 
     const value = useMemo(
         () => ({

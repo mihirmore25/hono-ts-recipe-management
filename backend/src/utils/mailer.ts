@@ -29,7 +29,7 @@ export const sendResetPasswordEmail = async (email: string, token: string) => {
 
     const { data, error } = await resend.emails.send({
         from: fromEmail,
-        to: "mihirmore.25@gmail.comq",
+        to: "mihirmore.25@gmail.com",
         subject: "Reset your RecipeHub password",
         text: `You requested a RecipeHub password reset. Reset your password here: ${resetURL}\n\nThis link expires in 1 hour. If you did not request this, you can safely ignore this email.`,
         html: `

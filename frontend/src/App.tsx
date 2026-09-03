@@ -16,6 +16,7 @@ import { RecipeDetailPage } from "./components/pages/RecipeDetailPage";
 import { AdminUsersPage } from "./components/admin/AdminUsersPage";
 import { NotFoundPage } from "./components/pages/NotFoundPage";
 import { ProfilePage } from "./components/pages/ProfilePage";
+import { Toaster } from "sonner";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
@@ -128,6 +129,18 @@ const AppRoutes = () => {
 function App() {
     return (
         <AuthProvider>
+            <Toaster
+                position="top-center"
+                richColors
+                closeButton
+                toastOptions={{
+                    duration: 4500,
+                    style: {
+                        borderRadius: "1rem",
+                        fontFamily: "inherit",
+                    },
+                }}
+            />
             <AppRoutes />
         </AuthProvider>
     );

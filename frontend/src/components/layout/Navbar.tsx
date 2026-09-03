@@ -10,6 +10,8 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { FloatingFoodIcons } from "./FloatingFoodIcons";
 import { UserAvatar } from "./UserAvatar";
+import { authApi } from "../../utils/api";
+import { toast } from "sonner";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `rounded-full px-3 py-2.5 text-xs font-medium transition sm:px-4 sm:text-sm ${isActive ? "bg-amber-500 text-white shadow" : "text-slate-700 hover:bg-slate-100"}`;
@@ -20,9 +22,19 @@ export const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleLogout = async () => {
-        logout();
-        setMobileMenuOpen(false);
-        navigate("/login");
+        try {
+            await authApi.logout();
+            toast.success("You are successfully logged out.");
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message ||
+                    "We could not contact the server, but you have been logged out on this device.",
+            );
+        } finally {
+            logout();
+            setMobileMenuOpen(false);
+            navigate("/login");
+        }
     };
 
     const closeMenu = () => setMobileMenuOpen(false);

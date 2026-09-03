@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi, userApi } from "../../utils/api";
+import { toast } from "sonner";
 
 interface AuthFormProps {
     mode: "login" | "register" | "forgot" | "reset";
@@ -34,11 +35,17 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                     const profile = response.data?.data;
                     if (!profile) throw new Error("Google profile was not returned.");
                     login(profile, googleToken);
+                    toast.success("You are successfully signed in with Google.", {
+                        id: "google-login-success",
+                    });
                     navigate("/", { replace: true });
                 })
                 .catch(() => {
                     localStorage.removeItem("token");
-                    setError("Google sign-in failed. Please try again.");
+                    const errorMessage =
+                        "Google sign-in failed. Please try again.";
+                    setError(errorMessage);
+                    toast.error(errorMessage);
                     navigate("/login", { replace: true });
                 })
                 .finally(() => setSubmitting(false));
@@ -46,7 +53,9 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
         }
 
         if (query.get("error") === "google_auth_failed") {
-            setError("Google sign-in failed. Please try again.");
+            const errorMessage = "Google sign-in failed. Please try again.";
+            setError(errorMessage);
+            toast.error(errorMessage);
         }
     }, [location.search, login, mode, navigate]);
 
@@ -64,6 +73,7 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                     password: form.password,
                 });
                 setMessage("Account created successfully. Please login.");
+                toast.success("Your account was created successfully.");
                 navigate("/login");
             } else if (mode === "login") {
                 const response = await authApi.login({
@@ -83,23 +93,27 @@ export const AuthForm = ({ mode, token }: AuthFormProps) => {
                 }
 
                 login(user, authToken);
+                toast.success("You are successfully logged in.");
                 navigate("/");
             } else if (mode === "forgot") {
                 await authApi.forgotPassword({ email: form.email });
                 setMessage("Password reset email request submitted.");
+                toast.success("Password reset instructions were sent to your email.");
             } else if (mode === "reset" && resetToken) {
                 await authApi.resetPassword(resetToken, {
                     password: form.password,
                 });
                 setMessage("Password reset successful. Please login again.");
+                toast.success("Your password was reset successfully.");
                 navigate("/login");
             }
         } catch (err: any) {
-            setError(
+            const errorMessage =
                 err?.response?.data?.message ||
                     err?.response?.data?.error ||
-                    "Something went wrong",
-            );
+                    "Something went wrong. Please try again.";
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setSubmitting(false);
         }
