@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Clock3, Dumbbell, Flame, Pencil, Search, Wheat } from "lucide-react";
+import { Clock3, Dumbbell, Flame, Pencil, Plus, Search, Wheat } from "lucide-react";
 import { recipeApi, userApi } from "../../utils/api";
 import { formatDuration } from "../../utils/time";
 import type { Recipe, User } from "../../types";
@@ -224,10 +224,11 @@ export const ProfilePage = () => {
                         </form>
                     ) : null}
                 </section>
-                <form
-                    onSubmit={(event) => event.preventDefault()}
-                    className="mb-6 w-full"
-                >
+                <div className="mb-6 flex w-full flex-col gap-3 sm:flex-row">
+                    <form
+                        onSubmit={(event) => event.preventDefault()}
+                        className="w-full sm:flex-1"
+                    >
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
@@ -238,7 +239,17 @@ export const ProfilePage = () => {
                             className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
                         />
                     </div>
-                </form>
+                    </form>
+                    {canEdit ? (
+                        <Link
+                            to="/recipes/new"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 sm:w-auto"
+                        >
+                            <Plus size={18} />
+                            Create new recipe
+                        </Link>
+                    ) : null}
+                </div>
 
                 {profile.recipes.length === 0 ? (
                     <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
